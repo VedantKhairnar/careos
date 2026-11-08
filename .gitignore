@@ -42,3 +42,6 @@ next-env.d.ts
 
 # Project docs: kept local until reviewed
 /docs/
+
+# keep the template, never the real values
+!.env.example
