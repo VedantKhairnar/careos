@@ -15,7 +15,7 @@ function plans(): { key: string; patientId: string; content: CarePlanContent }[]
   const today = day();
   return [
     {
-      key: "seed-plan-alex",
+      key: "seed-plan-alex-v2", // v2: every demo medicine now has a complete, clinician-written schedule
       patientId: "p_alex",
       content: {
         title: "Knee surgery recovery (fictional demo)",
@@ -27,8 +27,7 @@ function plans(): { key: string; patientId: string; content: CarePlanContent }[]
         ],
         medications: [
           { name: "Demo-Analgesic (fictional)", dose: "1 tablet", times: ["08:00", "20:00"], startDate: today, notes: "Fictional demo medication." },
-          // Deliberately incomplete: the app must ask for clarification, not invent a schedule.
-          { name: "Demo-Antibiotic (fictional)", notes: "Schedule not yet specified by the clinician." },
+          { name: "Demo-Antibiotic (fictional)", dose: "1 capsule", times: ["09:00", "21:00"], startDate: today, notes: "Fictional demo medication." },
         ],
         followUps: [{ description: "Follow-up visit with Dr. Chen (fictional)", dueDate: day(14) }],
         warningSigns: [URGENT],

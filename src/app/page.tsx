@@ -5,7 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Card, useToast } from "@/components/ui";
-import { api, ApiError } from "@/lib/api";
+import { api, ApiError, setActingAs } from "@/lib/api";
 import { BRAND } from "@/lib/brand";
 
 const ROLES = [
@@ -52,7 +52,8 @@ export default function SignIn() {
   async function enter(r: (typeof ROLES)[number]) {
     setBusy(r.key);
     try {
-      await api("/api/auth/session", { body: r.body });
+      const me = await api<{ as: string }>("/api/auth/session", { body: r.body });
+      setActingAs(me.as); // this tab now acts as this person, whatever other tabs are signed in as
       await api("/api/demo/seed", { method: "POST" });
       qc.clear(); // drop anything cached for the previous role
       router.push(r.to);

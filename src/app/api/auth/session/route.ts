@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { getEnv } from "@/server/env";
 import { HttpError, ok, parseBody, requireDemoMode, route } from "@/server/http";
-import { createSessionToken, sessionCookieHeader } from "@/server/session";
+import { createSessionToken, identityKey, keyedSessionCookieHeader, sessionCookieHeader } from "@/server/session";
 
 const Body = z
   .object({
@@ -21,7 +21,10 @@ export const POST = route(async (req) => {
   if (!getEnv().demoMode) throw new HttpError(404, "not_found", "Not found");
   const userId = `demo-${body.role}-${body.patientId ?? "1"}`;
   const token = createSessionToken({ userId, role: body.role, patientId: body.patientId, displayName: body.displayName });
-  const res = ok({ userId, role: body.role, patientId: body.patientId ?? null, demo: true });
+  const as = identityKey(body);
+  const res = ok({ userId, role: body.role, patientId: body.patientId ?? null, demo: true, as });
+  // Legacy cookie first (API clients read the first Set-Cookie), then the identity-specific one the portals use.
   res.headers.set("Set-Cookie", sessionCookieHeader(token));
+  res.headers.append("Set-Cookie", keyedSessionCookieHeader(token, as));
   return res;
 });

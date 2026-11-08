@@ -4,13 +4,33 @@ export class ApiError extends Error {
   }
 }
 
+const AS_KEY = "careos-as";
+
+/** Which identity this browser TAB acts as (per-tab, so several roles can be open side by side). */
+export function actingAs(): string | null {
+  try {
+    return sessionStorage.getItem(AS_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function setActingAs(key: string | null): void {
+  try {
+    if (key) sessionStorage.setItem(AS_KEY, key);
+    else sessionStorage.removeItem(AS_KEY);
+  } catch {
+    /* storage unavailable: falls back to the last sign-in */
+  }
+}
+
 /** Calls our own API. Unwraps { data } and turns { error } into an ApiError with a safe message. */
 export async function api<T>(path: string, init: { method?: string; body?: unknown } = {}): Promise<T> {
   let res: Response;
   try {
     res = await fetch(path, {
       method: init.method ?? (init.body === undefined ? "GET" : "POST"),
-      headers: init.body === undefined ? undefined : { "content-type": "application/json" },
+      headers: { ...(init.body === undefined ? {} : { "content-type": "application/json" }), ...(actingAs() ? { "x-careos-as": actingAs()! } : {}) },
       body: init.body === undefined ? undefined : JSON.stringify(init.body),
       cache: "no-store",
     });

@@ -3,7 +3,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { api } from "@/lib/api";
+import { api, setActingAs } from "@/lib/api";
 import { useApi } from "@/lib/useApi";
 import { CardSkeleton } from "./ui";
 
@@ -49,6 +49,7 @@ export function useSignOut() {
     try {
       await api("/api/auth/logout", { method: "POST" });
     } finally {
+      setActingAs(null);
       qc.clear(); // never show the next role the previous person's cached data
       router.push("/");
     }

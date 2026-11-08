@@ -240,7 +240,10 @@ describe("demo seed", () => {
 
     const alex = await asPatient("p_alex");
     const alexMeds = (await (await call(medsGet, req("GET", "/api/medications", { cookie: alex }))).json()).data.medications;
-    expect(alexMeds.find((m: { name: string }) => m.name.includes("Antibiotic")).schedule).toBe("needs_clarification");
+    // Every demo medicine has a complete, clinician-written schedule. The "incomplete instructions" behaviour is tested
+    // above with a purpose-built plan; the app never guesses a missing schedule, the demo just does not contain one.
+    expect(alexMeds.every((m: { schedule: string }) => m.schedule === "ready")).toBe(true);
+    expect(alexMeds.find((m: { name: string }) => m.name.includes("Antibiotic")).doses.length).toBeGreaterThan(0);
   });
 
   it("does not exist outside demo mode", async () => {
