@@ -21,8 +21,7 @@
   <!-- the loop: patient, doctor and pharmacy joined by one closed circle -->
   <g transform="translate(985 160)" fill="none" stroke-linecap="round">
     <circle r="92" stroke="#ffffff" stroke-opacity="0.18" stroke-width="14"/>
-    <path d="M -92 0 A 92 92 0 1 1 0 -92" stroke="#fde68a" stroke-width="14"/>
-    <path d="M -22 -92 L 4 -112 M -22 -92 L 4 -72" stroke="#fde68a" stroke-width="12"/>
+    <path d="M -92 0 A 92 92 0 1 0 0 -92" stroke="#fde68a" stroke-width="14"/>
     <circle cx="0" cy="-92" r="22" fill="#0f766e" stroke="#ffffff" stroke-width="5"/>
     <circle cx="80" cy="46" r="22" fill="#0f766e" stroke="#ffffff" stroke-width="5"/>
     <circle cx="-80" cy="46" r="22" fill="#0f766e" stroke="#ffffff" stroke-width="5"/>
