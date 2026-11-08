@@ -2,6 +2,8 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   /* config options here */
+  // Hide the small Next.js badge that development mode (`pnpm dev`) draws in the bottom-left corner. Production never shows it.
+  devIndicators: false,
   cacheComponents: true,
   partialPrefetching: true,
   experimental: {
