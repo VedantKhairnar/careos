@@ -94,7 +94,7 @@ export async function createCarePlan(
       { payload: { content: input.content }, simulated: opts.simulated, sourceSystem: opts.sourceSystem },
     ),
   );
-  return getCarePlan(actor, planId);
+  return toView(await runtime().store.listByWorkflow(planId));
 }
 
 /** Approval is clinician-only and enforced by the orchestrator, not here. */

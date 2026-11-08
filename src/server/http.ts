@@ -78,6 +78,11 @@ export function route<C = unknown>(fn: Handler<C>): Handler<C> {
       if (isNextControlFlow(err)) throw err;
       if (err instanceof HttpError) return fail(err.status, err.code, err.message);
       if (err instanceof Forbidden) return fail(403, "forbidden", err.message);
+      // The AI assistant being busy or unconfigured is a 503, never a made-up answer. Matched by name so this
+      // module does not import the agents.
+      if (err instanceof Error && err.name === "AiUnavailable") {
+        return fail(503, `ai_${(err as { reason?: string }).reason ?? "unavailable"}`, err.message);
+      }
       if (err instanceof ZodError) {
         return fail(400, "validation_failed", err.issues.map((i) => `${i.path.join(".") || "body"}: ${i.message}`).join("; "));
       }

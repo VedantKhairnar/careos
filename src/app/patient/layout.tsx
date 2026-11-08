@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, ClipboardList, History, Home, LogOut, Pill, Type } from "lucide-react";
+import { Bell, ClipboardList, History, Home, LogOut, MessageCircle, Pill, Type } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
@@ -13,6 +13,7 @@ const NAV = [
   { href: "/patient/plan", label: "Care plan", icon: ClipboardList },
   { href: "/patient/medications", label: "Medications", icon: Pill },
   { href: "/patient/timeline", label: "Timeline", icon: History },
+  { href: "/patient/ask", label: "Ask", icon: MessageCircle },
   { href: "/patient/notifications", label: "Updates", icon: Bell },
 ];
 
@@ -78,7 +79,7 @@ function Shell({ children }: { children: ReactNode }) {
       <footer className="px-4 pb-24 text-xs text-muted sm:pb-6">{BRAND.demoNotice}</footer>
 
       <nav aria-label="Primary" className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface sm:hidden">
-        <ul className="mx-auto grid max-w-3xl grid-cols-5">
+        <ul className="mx-auto grid max-w-3xl grid-cols-6">
           {NAV.map((n) => (
             <li key={n.href}>
               <Link

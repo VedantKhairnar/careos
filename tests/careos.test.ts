@@ -241,7 +241,7 @@ describe("11. agent failures", () => {
     const r = await orch.runAgent("doctor", "p1", async () => {
       throw new Error("model unavailable");
     });
-    expect(r).toEqual({ ok: false, error: "model unavailable" });
+    expect(r).toMatchObject({ ok: false, error: "model unavailable" });
     expect(await store.listByWorkflow("rx1")).toEqual(before);
     const log = await store.listAgentExecutions();
     expect(log).toHaveLength(1);

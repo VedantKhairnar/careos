@@ -7,6 +7,11 @@ export interface AgentExecution {
   durationMs: number;
   ok: boolean;
   error?: string;
+  /** Set for tool executions and model calls so there is real evidence of what each agent did. */
+  tool?: string;
+  model?: string;
+  inputTokens?: number;
+  outputTokens?: number;
 }
 
 /**

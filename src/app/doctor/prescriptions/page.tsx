@@ -1,12 +1,52 @@
 "use client";
 
-import { Badge, Card, CardSkeleton, EmptyState, ErrorState } from "@/components/ui";
+import { Sparkles } from "lucide-react";
+import { useState } from "react";
+import { Badge, Button, Card, CardSkeleton, EmptyState, ErrorState, useToast } from "@/components/ui";
 import { RxBadge } from "@/components/rx";
 import { RxActions } from "@/components/RxActions";
+import type { PharmacyDraft } from "@/agents/pharmacyAgent";
 import type { PrescriptionSummary } from "@/server/services";
+import { api, ApiError } from "@/lib/api";
 import { patientName } from "@/lib/demoPatients";
 import { timeAgo } from "@/lib/format";
 import { useApi } from "@/lib/useApi";
+
+function AiPharmacySummary({ workflowId }: { workflowId: string }) {
+  const toast = useToast();
+  const [busy, setBusy] = useState(false);
+  const [out, setOut] = useState<PharmacyDraft | null>(null);
+
+  async function run() {
+    setBusy(true);
+    try {
+      setOut(await api<PharmacyDraft>("/api/agents/pharmacy/process", { body: { workflowId } }));
+    } catch (e) {
+      toast(e instanceof ApiError ? e.message : "That did not work.", "danger");
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <div className="mt-3">
+      <Button variant="secondary" loading={busy} onClick={run}>
+        <Sparkles aria-hidden className="h-4 w-4" /> Summarize with AI
+      </Button>
+      {out && (
+        <div className="mt-3 space-y-2 rounded-xl bg-surface-2 p-3 text-sm">
+          <Badge tone="info">AI draft. Nothing has been sent.</Badge>
+          <p>
+            <strong>For you:</strong> {out.clinicianSummary}
+          </p>
+          <p>
+            <strong>Possible message to the patient:</strong> {out.patientMessage}
+          </p>
+          {out.missingInformation.length > 0 && <p className="text-muted">Not known: {out.missingInformation.join("; ")}</p>}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function PrescriptionsPage() {
   const { data, loading, error, reload } = useApi<PrescriptionSummary[]>("/api/prescriptions", { pollMs: 5000 });
@@ -36,6 +76,7 @@ export default function PrescriptionsPage() {
               <div className="mt-3">
                 <RxActions workflowId={r.workflowId} state={r.state} onDone={reload} />
               </div>
+              <AiPharmacySummary workflowId={r.workflowId} />
             </Card>
           </li>
         ))}

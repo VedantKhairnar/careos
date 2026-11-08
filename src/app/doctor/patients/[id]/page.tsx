@@ -3,6 +3,7 @@
 import { useParams } from "next/navigation";
 import { useState } from "react";
 import { CarePlanForm } from "@/components/CarePlanForm";
+import { AiDraftPanel, AiSummaryCard, QuestionsCard } from "@/components/doctorAi";
 import { PlanReview } from "@/components/PlanReview";
 import { GAP_LABEL, RxBadge } from "@/components/rx";
 import { RxActions } from "@/components/RxActions";
@@ -67,10 +68,15 @@ export default function PatientDetail() {
             </li>
           ))}
         </ul>
-        <div className="mt-4">
+        <div className="mt-4 space-y-3">
+          <AiDraftPanel patientId={s.patient.id} onCreated={reload} />
           <CarePlanForm patientId={s.patient.id} onCreated={reload} />
         </div>
       </Card>
+
+      <AiSummaryCard patientId={s.patient.id} />
+
+      <QuestionsCard patientId={s.patient.id} />
 
       <Card title="Prescriptions">
         {s.prescriptions.length === 0 && <EmptyState title="No prescriptions yet" />}

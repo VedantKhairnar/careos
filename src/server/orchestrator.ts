@@ -29,6 +29,8 @@ const OTHER_EVENT_ACTORS: Partial<Record<EventType, ActorRole[]>> = {
   "followup.completed": ["clinician"],
   "task.confirmed": ["patient", "caregiver"],
   "dose.reported": ["patient", "caregiver"],
+  "question.asked": ["patient", "caregiver"],
+  "question.answered": ["clinician"],
   "gap.resolved": ["clinician", "system"],
 };
 
@@ -111,7 +113,7 @@ export class Orchestrator {
     agent: "patient" | "doctor" | "pharmacy",
     patientId: string,
     fn: () => Promise<T>,
-  ): Promise<{ ok: true; value: T } | { ok: false; error: string }> {
+  ): Promise<{ ok: true; value: T } | { ok: false; error: string; cause: unknown }> {
     const startedAt = this.now();
     const t0 = Date.now();
     try {
@@ -121,7 +123,7 @@ export class Orchestrator {
     } catch (err) {
       const error = err instanceof Error ? err.message : String(err);
       await this.store.logAgentExecution({ agent, patientId, startedAt, durationMs: Date.now() - t0, ok: false, error });
-      return { ok: false, error };
+      return { ok: false, error, cause: err };
     }
   }
 }

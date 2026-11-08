@@ -49,7 +49,13 @@ export function envelope(
     occurredAt: now,
     recordedAt: now,
     payload: extra.payload ?? {},
-    verification: actor.role === "patient" || actor.role === "caregiver" ? ("patient_reported" as const) : ("confirmed" as const),
+    // AI-authored content is never "confirmed": a human has not verified it yet.
+    verification:
+      actor.role === "patient" || actor.role === "caregiver"
+        ? ("patient_reported" as const)
+        : actor.role === "agent"
+          ? ("unverified" as const)
+          : ("confirmed" as const),
     simulated: extra.simulated ?? false,
     correlationId: base.correlationId,
     idempotencyKey: base.idempotencyKey,

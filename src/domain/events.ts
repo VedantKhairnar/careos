@@ -42,6 +42,8 @@ export const EventType = z.enum([
   "followup.completed",
   "task.confirmed",
   "dose.reported", // patient-reported only
+  "question.asked", // patient (or the assistant on their behalf) asks the care team
+  "question.answered", // clinician only
   "gap.resolved",
 ]);
 export type EventType = z.infer<typeof EventType>;
