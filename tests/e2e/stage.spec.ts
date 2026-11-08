@@ -38,7 +38,7 @@ test("the whole care cycle from one screen, with the agents' log beside it", asy
     await doctor.getByRole("checkbox", { name: /I have reviewed this plan/ }).check();
     await doctor.getByRole("button", { name: "Approve care plan" }).click();
     await expect(doctor.getByText("Approved. The patient can now see this plan.")).toBeVisible();
-    await expect(patient.getByText("Your last visit")).toBeVisible({ timeout: 30_000 });
+    await expect(patient.getByRole("heading", { name: "Your last visit" })).toBeVisible({ timeout: 30_000 });
   });
 
   await test.step("patient reports a dose", async () => {
