@@ -1,6 +1,6 @@
 "use client";
 
-import { Activity, AlertTriangle, ClipboardList, LayoutDashboard, LogOut, Users } from "lucide-react";
+import { Activity, AlertTriangle, BarChart3, ClipboardList, LayoutDashboard, LogOut, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
@@ -12,6 +12,7 @@ const NAV = [
   { href: "/doctor/patients", label: "Patients", icon: Users },
   { href: "/doctor/prescriptions", label: "Prescriptions", icon: ClipboardList },
   { href: "/doctor/gaps", label: "Care gaps", icon: AlertTriangle },
+  { href: "/doctor/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/doctor/agents", label: "Agent activity", icon: Activity },
 ];
 

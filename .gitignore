@@ -48,3 +48,6 @@ next-env.d.ts
 
 # per-user Claude Code settings (hooks added by entire graph setup)
 .claude/settings.local.json
+
+# Timescale Cloud CA: a public certificate the app needs to verify TLS
+!db/timescale-ca.pem

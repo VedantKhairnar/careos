@@ -1,4 +1,5 @@
 import { Orchestrator } from "./orchestrator";
+import { PgEventStore } from "./pgStore";
 import { InMemoryEventStore, type EventStore } from "./store";
 
 interface Runtime {
@@ -12,8 +13,10 @@ const KEY = Symbol.for("careos.runtime");
 type G = typeof globalThis & { [KEY]?: Runtime };
 
 function build(): Runtime {
-  // In-memory only for now. A Postgres/Timescale store will replace this behind the same interface.
-  const store = new InMemoryEventStore();
+  // Tiger Data (Postgres/TimescaleDB) when DATABASE_URL is set; in-memory otherwise. Tests always use memory
+  // unless they build a PgEventStore themselves, so running them can never touch a real database.
+  const usePg = Boolean(process.env.DATABASE_URL) && process.env.NODE_ENV !== "test" && process.env.CAREOS_STORE !== "memory";
+  const store: EventStore = usePg ? new PgEventStore() : new InMemoryEventStore();
   return { store, orchestrator: new Orchestrator(store), clock: { offsetMs: 0 } };
 }
 

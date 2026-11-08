@@ -254,5 +254,11 @@ export async function careGaps(actor: Actor, patientId?: string): Promise<CareGa
         ? await runtime().store.listByPatient(patientId)
         : await runtime().store.listAll()
       : [];
-  return detectGaps(events, new Date(nowMs()).toISOString());
+  const gaps = detectGaps(events, new Date(nowMs()).toISOString());
+  // Persist transitions from the complete clinician view only, so a patient- or patient-id-scoped read can never
+  // make another patient's open gap look resolved.
+  if (actor.role === "clinician" && !patientId) {
+    await runtime().store.recordGaps?.(gaps.map((g) => ({ key: g.key, rule: g.rule, patientId: g.patientId, workflowId: g.workflowId, responsible: g.responsible })));
+  }
+  return gaps;
 }
