@@ -92,6 +92,13 @@ export default function SignIn() {
         <strong>Demo sign-in.</strong> {BRAND.demoNotice} Pick a role to explore; there are no passwords because there are no real accounts.
       </div>
 
+      <a
+        href="/demo/stage"
+        className="inline-flex min-h-11 w-fit items-center rounded-xl bg-accent px-5 font-semibold text-accent-ink hover:opacity-90"
+      >
+        Open the combined demo
+      </a>
+
       <ul className="grid gap-3 sm:grid-cols-2">
         {ROLES.map((r) => (
           <li key={r.key}>
