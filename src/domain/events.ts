@@ -45,6 +45,8 @@ export const EventType = z.enum([
   "question.asked", // patient (or the assistant on their behalf) asks the care team
   "question.answered", // clinician only
   "gap.resolved",
+  "reading.recorded", // patient-reported home measurement (heart rate, blood pressure, pain, temperature)
+  "reading.threshold_set", // clinician only: the range at which a reading is flagged for review
   "agent.suggestion_created", // an agent drafted something for a clinician to review. Changes no state.
   "agent.suggestion_reviewed", // clinician only: approved (sent to the patient) or dismissed
 ]);

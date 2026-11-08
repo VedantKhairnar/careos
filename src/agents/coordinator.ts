@@ -67,9 +67,13 @@ const hash = (d: Draft) => createHash("sha256").update(JSON.stringify([d.patient
 
 /** Deterministic checks that run in code, whatever the model says. */
 export function deterministicChecks(draft: Draft, facts: unknown): string[] {
+  return checkText([draft.patientMessage, draft.clinicianSummary, draft.suggestedNextStep].join(" "), facts);
+}
+
+/** The same code checks for any text an agent wrote: no invented numbers, ids, timestamps, advice or reassurance. */
+export function checkText(all: string, facts: unknown): string[] {
   const issues: string[] = [];
   const factsText = JSON.stringify(facts).toLowerCase();
-  const all = [draft.patientMessage, draft.clinicianSummary, draft.suggestedNextStep].join(" ");
   if (/\brx_[0-9a-f]{6,}/i.test(all) || /\b\d{4}-\d{2}-\d{2}t\d{2}/i.test(all)) issues.push("contains an internal id or a raw timestamp");
   for (const m of new Set(all.match(/\d+(?:\.\d+)?/g) ?? [])) if (!factsText.includes(m)) issues.push(`mentions "${m}", which is not in the records`);
   if (/don'?t worry|nothing to worry|no need to worry|you should (?:take|stop|skip|double)|switch to|instead of|increase the dose|decrease the dose/i.test(all)) issues.push("contains advice or reassurance, which only a clinician may give");

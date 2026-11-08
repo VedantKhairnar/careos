@@ -32,6 +32,8 @@ const OTHER_EVENT_ACTORS: Partial<Record<EventType, ActorRole[]>> = {
   "question.asked": ["patient", "caregiver"],
   "question.answered": ["clinician"],
   "gap.resolved": ["clinician", "system"],
+  "reading.recorded": ["patient", "caregiver"],
+  "reading.threshold_set": ["clinician"],
   "agent.suggestion_created": ["agent"],
   "agent.suggestion_reviewed": ["clinician"],
 };

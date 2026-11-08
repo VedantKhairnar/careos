@@ -6,6 +6,7 @@ const AGENT: Record<string, { label: string; cls: string }> = {
   reviewer: { label: "Safety Reviewer", cls: "bg-warning-bg text-warning" },
   "safety-check": { label: "Code check", cls: "bg-warning-bg text-warning" },
   "patient-assistant": { label: "Patient assistant", cls: "bg-info-bg text-info" },
+  explainer: { label: "Visit explainer", cls: "bg-info-bg text-info" },
   "doctor-agent": { label: "Doctor agent", cls: "bg-info-bg text-info" },
   clinician: { label: "Clinician", cls: "bg-success-bg text-success" },
 };

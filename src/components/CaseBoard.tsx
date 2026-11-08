@@ -7,12 +7,14 @@ import type { CarePlanView } from "@/server/carePlans";
 import type { QuestionView } from "@/server/questions";
 import type { PrescriptionSummary } from "@/server/services";
 import type { SuggestionView } from "@/server/suggestions";
+import type { ReadingsView } from "@/server/readings";
 import { patientName } from "@/lib/demoPatients";
 import { useApi } from "@/lib/useApi";
 import { AgentSuggestionsCard } from "./AgentSuggestions";
 import { AiDraftPanel, QuestionsCard } from "./doctorAi";
 import { PlanReview } from "./PlanReview";
 import { PrescriptionForm } from "./PrescriptionForm";
+import { ReadingsPanel } from "./ReadingsPanel";
 import { RxActions } from "./RxActions";
 import { CardSkeleton } from "./ui";
 import { VisitStatus } from "./VisitStatus";
@@ -44,6 +46,7 @@ export function CaseBoard() {
   const pid = picked ?? patients.data?.find((p) => p.id === "p_alex")?.id ?? patients.data?.[0]?.id ?? null;
   const summary = useApi<Summary>(pid ? `/api/patients/${pid}` : null, { pollMs: 4000 });
   const sugg = useApi<SuggestionView[]>("/api/agent-suggestions", { pollMs: 3000 });
+  const rd = useApi<ReadingsView>(pid ? `/api/readings?patientId=${pid}` : null, { pollMs: 5000 });
   const qs = useApi<QuestionView[]>(pid ? `/api/questions?patientId=${pid}` : null, { pollMs: 5000 });
 
   if (!pid || summary.loading) return <CardSkeleton rows={4} />;
@@ -84,6 +87,8 @@ export function CaseBoard() {
     items.push({ key: "proposals", title: "Review what the agents prepared", why: "The pharmacy reported a problem. The agents investigated and drafted a message. Nothing is sent until you decide.", node: <AgentSuggestionsCard /> });
   if (openQuestions.length > 0)
     items.push({ key: "questions", title: "Answer the patient's question", why: "The patient (or their assistant) asked something only a clinician can answer.", node: <QuestionsCard patientId={pid} prefillAnswer="Please keep taking it until your review visit, and call us if anything changes." /> });
+  if ((rd.data?.flags.length ?? 0) > 0)
+    items.push({ key: "reading", title: "Review a home reading outside your range", why: `${rd.data!.flags.map((f) => `${f.label} ${f.value}${f.value2 !== undefined ? `/${f.value2}` : ""} ${f.unit} is ${f.limit}`).join("; ")}. Patient-reported. You set this range; the system does not judge the value.`, node: <ReadingsPanel patientId={pid} /> });
   if (rx?.state === "DELAYED")
     items.push({ key: "delay", title: "Follow up on the delayed prescription", why: "The pharmacy reported a delay. Log your follow-up once you have acted on it.", node: <RxActions workflowId={rx.workflowId} state={rx.state} onDone={reload} /> });
   if (items.length === 0 && !hasApproved)
@@ -133,6 +138,8 @@ export function CaseBoard() {
       )}
 
       <VisitStatus patientId={pid} />
+
+      {!items.some((i) => i.key === "reading") && <ReadingsPanel patientId={pid} />}
     </div>
   );
 }

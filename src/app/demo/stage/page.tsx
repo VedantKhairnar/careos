@@ -21,7 +21,7 @@ const WHO = [
 /** Shortcuts shown above each window, so nobody has to hunt for a page inside a small window. */
 const SHORTCUTS: Record<string, { label: string; src: string }[]> = {
   doctor: [{ label: "Case board", src: "/doctor/case" }, { label: "Agent room", src: "/doctor/agents" }, { label: "Patients", src: "/doctor/patients" }],
-  patient: [{ label: "Visit", src: "/patient/visit" }, { label: "Home", src: "/patient" }, { label: "Medications", src: "/patient/medications" }, { label: "Ask", src: "/patient/ask" }, { label: "Updates", src: "/patient/notifications" }],
+  patient: [{ label: "Visit", src: "/patient/visit" }, { label: "Home", src: "/patient" }, { label: "Medications", src: "/patient/medications" }, { label: "Readings", src: "/patient/readings" }, { label: "Ask", src: "/patient/ask" }, { label: "Updates", src: "/patient/notifications" }],
   pharmacy: [],
 };
 
