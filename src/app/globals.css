@@ -1,26 +1,106 @@
 @import "tailwindcss";
 
+/* Design tokens. Warm neutral surface, navy ink, restrained teal. Red is reserved for real errors/urgency. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --bg: #faf8f5;
+  --surface: #ffffff;
+  --surface-2: #f3f0ea;
+  --ink: #14213d;
+  --muted: #55657a;
+  --line: #e4dfd5;
+  --accent: #0f766e;
+  --accent-ink: #ffffff;
+  --success: #166534;
+  --success-bg: #e6f4ea;
+  --warning: #92400e;
+  --warning-bg: #fdf0d9;
+  --danger: #991b1b;
+  --danger-bg: #fbe7e7;
+  --info: #1e40af;
+  --info-bg: #e5edfb;
+  --ring: #0f766e;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --bg: #0f1620;
+    --surface: #17212e;
+    --surface-2: #1f2b3a;
+    --ink: #eaf0f7;
+    --muted: #9fb0c4;
+    --line: #2b394b;
+    --accent: #2dd4bf;
+    --accent-ink: #06201d;
+    --success: #86efac;
+    --success-bg: #15321f;
+    --warning: #fcd34d;
+    --warning-bg: #3a2c0d;
+    --danger: #fca5a5;
+    --danger-bg: #3d1717;
+    --info: #93c5fd;
+    --info-bg: #14264a;
+    --ring: #2dd4bf;
   }
 }
 
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-success: var(--success);
+  --color-success-bg: var(--success-bg);
+  --color-warning: var(--warning);
+  --color-warning-bg: var(--warning-bg);
+  --color-danger: var(--danger);
+  --color-danger-bg: var(--danger-bg);
+  --color-info: var(--info);
+  --color-info-bg: var(--info-bg);
+  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+html {
+  font-size: 16px;
+}
+/* Elderly-friendly option: toggled by a class on <html>. */
+html.large-text {
+  font-size: 19px;
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 3px solid var(--ring);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@keyframes skeleton-pulse {
+  50% {
+    opacity: 0.5;
+  }
+}
+.skeleton {
+  background: var(--surface-2);
+  border-radius: 0.5rem;
+  animation: skeleton-pulse 1.6s ease-in-out infinite;
 }

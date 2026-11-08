@@ -37,6 +37,8 @@ export interface CareGap {
   patientId: string;
   responsible: ResponsibleParty;
   sinceEventId: string;
+  /** When the event the gap is waiting on (or after) was recorded. */
+  sinceAt: string;
   detectedAt: string;
   /** Plain description. Deliberately administrative, never diagnostic. */
   description: string;
@@ -82,6 +84,7 @@ export function detectGaps(
         patientId: since.patientId,
         responsible,
         sinceEventId: since.eventId,
+        sinceAt: since.recordedAt,
         detectedAt: now,
         description,
       });

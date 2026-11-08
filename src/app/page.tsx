@@ -1,69 +1,103 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { ClipboardList, Pill, Stethoscope, Store } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { Card, useToast } from "@/components/ui";
+import { api, ApiError } from "@/lib/api";
+import { BRAND } from "@/lib/brand";
+
+const ROLES = [
+  {
+    key: "alex",
+    title: "Alex Rivera",
+    sub: "Patient. Recovering after knee surgery.",
+    icon: Pill,
+    body: { role: "patient", patientId: "p_alex", displayName: "Alex Rivera" },
+    to: "/patient",
+  },
+  {
+    key: "maria",
+    title: "Maria Santos",
+    sub: "Patient. Two overlapping care plans.",
+    icon: ClipboardList,
+    body: { role: "patient", patientId: "p_maria", displayName: "Maria Santos" },
+    to: "/patient",
+  },
+  {
+    key: "doctor",
+    title: "Dr. Chen",
+    sub: "Clinician. Reviews and approves care plans.",
+    icon: Stethoscope,
+    body: { role: "clinician", displayName: "Dr. Chen" },
+    to: "/doctor",
+  },
+  {
+    key: "pharmacy",
+    title: "Pharmacy simulator",
+    sub: "Demo operator. Sends simulated pharmacy events.",
+    icon: Store,
+    body: { role: "demo_operator", displayName: "Demo operator" },
+    to: "/demo/pharmacy",
+  },
+] as const;
+
+export default function SignIn() {
+  const router = useRouter();
+  const toast = useToast();
+  const qc = useQueryClient();
+  const [busy, setBusy] = useState<string | null>(null);
+
+  async function enter(r: (typeof ROLES)[number]) {
+    setBusy(r.key);
+    try {
+      await api("/api/auth/session", { body: r.body });
+      await api("/api/demo/seed", { method: "POST" });
+      qc.clear(); // drop anything cached for the previous role
+      router.push(r.to);
+    } catch (e) {
+      toast(e instanceof ApiError ? e.message : "Could not start the demo", "danger");
+      setBusy(null);
+    }
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <main className="mx-auto flex min-h-screen max-w-3xl flex-col justify-center gap-6 px-4 py-10">
+      <header>
+        <p className="text-sm font-semibold uppercase tracking-wide text-accent">{BRAND.name}</p>
+        <h1 className="mt-1 text-3xl font-bold sm:text-4xl">{BRAND.tagline}</h1>
+        <p className="mt-3 max-w-xl text-muted">
+          Doctors, patients and pharmacies on one shared, verifiable record. Every status shows where it came from and whether it was confirmed.
+        </p>
+      </header>
+
+      <div role="note" className="rounded-xl bg-info-bg p-4 text-sm text-info">
+        <strong>Demo sign-in.</strong> {BRAND.demoNotice} Pick a role to explore; there are no passwords because there are no real accounts.
+      </div>
+
+      <ul className="grid gap-3 sm:grid-cols-2">
+        {ROLES.map((r) => (
+          <li key={r.key}>
+            <button
+              onClick={() => enter(r)}
+              disabled={busy !== null}
+              className="w-full text-left disabled:opacity-60"
+              aria-label={`Continue as ${r.title}`}
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+              <Card className="h-full transition hover:border-accent">
+                <div className="flex items-start gap-3">
+                  <r.icon aria-hidden className="mt-0.5 h-6 w-6 text-accent" />
+                  <div>
+                    <p className="font-semibold">{r.title}</p>
+                    <p className="text-sm text-muted">{busy === r.key ? "Loading the demo…" : r.sub}</p>
+                  </div>
+                </div>
+              </Card>
+            </button>
+          </li>
+        ))}
+      </ul>
+    </main>
   );
 }

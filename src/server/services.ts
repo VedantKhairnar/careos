@@ -3,7 +3,7 @@ import { detectGaps, type CareGap } from "@/domain/careGap";
 import type { Actor, CareEvent, EventType } from "@/domain/events";
 import { prescriptionStatus } from "@/domain/status";
 import { HttpError, rejection } from "./http";
-import { runtime } from "./runtime";
+import { nowMs, runtime } from "./runtime";
 
 export const SYSTEM: Actor = { id: "careos-orchestrator", role: "system" };
 
@@ -231,7 +231,7 @@ export async function listPrescriptions(actor: Actor, patientId?: string): Promi
 
 export async function listWorkflows(): Promise<{ workflowId: string; patientId: string; state: string; text: string }[]> {
   const all = await runtime().store.listAll();
-  const ids = [...new Set(all.map((e) => e.workflowId))];
+  const ids = [...new Set(all.filter((e) => e.type === "prescription.authorized").map((e) => e.workflowId))];
   return ids.map((id) => {
     const evs = all.filter((e) => e.workflowId === id);
     const s = prescriptionStatus(evs);
@@ -248,5 +248,5 @@ export async function careGaps(actor: Actor, patientId?: string): Promise<CareGa
         ? await runtime().store.listByPatient(patientId)
         : await runtime().store.listAll()
       : [];
-  return detectGaps(events, new Date().toISOString());
+  return detectGaps(events, new Date(nowMs()).toISOString());
 }

@@ -2,11 +2,7 @@ import type { Actor } from "@/domain/events";
 import { approveCarePlan, createCarePlan, type CarePlanContent } from "./carePlans";
 import { createPrescription } from "./services";
 
-/** Fictional people. Everything seeded here is flagged simulated. */
-export const DEMO_PATIENTS = [
-  { id: "p_alex", displayName: "Alex Rivera", scenario: "Post-surgery recovery (fictional)" },
-  { id: "p_maria", displayName: "Maria Santos", scenario: "Two overlapping conditions (fictional)" },
-] as const;
+export { DEMO_PATIENTS } from "@/lib/demoPatients";
 
 const SEED_CLINICIAN: Actor = { id: "demo-clinician-seed", role: "clinician" };
 const SEED = { simulated: true, sourceSystem: "demo-seed" } as const;
