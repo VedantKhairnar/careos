@@ -1,4 +1,4 @@
-# Deploying CareOS on Vultr
+# Deploying Care ON on Vultr
 
 What runs: one Vultr Cloud Compute server (Ubuntu 24.04, 2 vCPU / 4 GB, New Jersey). Caddy terminates HTTPS with an
 automatic Let's Encrypt certificate and proxies to the app on `127.0.0.1:3000`, which runs as an unprivileged user

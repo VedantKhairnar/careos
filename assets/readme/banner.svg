@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="320" viewBox="0 0 1200 320" role="img" aria-label="Care ON: agents draft, humans decide, nothing falls through the cracks">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#064e3b"/>
+      <stop offset="0.55" stop-color="#0f766e"/>
+      <stop offset="1" stop-color="#0891b2"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.85" cy="0.2" r="0.7">
+      <stop offset="0" stop-color="#5eead4" stop-opacity="0.45"/>
+      <stop offset="1" stop-color="#5eead4" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="chip" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0.10"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="320" rx="22" fill="url(#bg)"/>
+  <rect width="1200" height="320" rx="22" fill="url(#glow)"/>
+
+  <!-- the loop: patient, doctor and pharmacy joined by one closed circle -->
+  <g transform="translate(985 160)" fill="none" stroke-linecap="round">
+    <circle r="92" stroke="#ffffff" stroke-opacity="0.18" stroke-width="14"/>
+    <path d="M -92 0 A 92 92 0 1 1 0 -92" stroke="#fde68a" stroke-width="14"/>
+    <path d="M -22 -92 L 4 -112 M -22 -92 L 4 -72" stroke="#fde68a" stroke-width="12"/>
+    <circle cx="0" cy="-92" r="22" fill="#0f766e" stroke="#ffffff" stroke-width="5"/>
+    <circle cx="80" cy="46" r="22" fill="#0f766e" stroke="#ffffff" stroke-width="5"/>
+    <circle cx="-80" cy="46" r="22" fill="#0f766e" stroke="#ffffff" stroke-width="5"/>
+    <path d="M -9 -92 L -2 -85 L 10 -100" stroke="#ffffff" stroke-width="5"/>
+    <path d="M 71 46 L 78 53 L 90 38" stroke="#ffffff" stroke-width="5"/>
+    <path d="M -89 46 L -82 53 L -70 38" stroke="#ffffff" stroke-width="5"/>
+  </g>
+
+  <text x="64" y="118" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="82" font-weight="800" fill="#ffffff" letter-spacing="-2">Care ON</text>
+  <text x="66" y="168" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="28" font-weight="500" fill="#ccfbf1">The visit doesn't end when you leave the room.</text>
+
+  <g font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="19" font-weight="700" fill="#ffffff">
+    <rect x="64" y="212" width="214" height="46" rx="23" fill="url(#chip)" stroke="#ffffff" stroke-opacity="0.35"/>
+    <text x="171" y="242" text-anchor="middle">Agents draft</text>
+    <rect x="294" y="212" width="214" height="46" rx="23" fill="url(#chip)" stroke="#ffffff" stroke-opacity="0.35"/>
+    <text x="401" y="242" text-anchor="middle">Humans decide</text>
+    <rect x="524" y="212" width="290" height="46" rx="23" fill="url(#chip)" stroke="#fde68a" stroke-opacity="0.7"/>
+    <text x="669" y="242" text-anchor="middle" fill="#fde68a">Nothing falls through</text>
+  </g>
+</svg>

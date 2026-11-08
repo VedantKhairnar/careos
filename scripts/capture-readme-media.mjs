@@ -98,7 +98,7 @@ try {
     const s = await stage("readings");
     await pause(s.page, 1500);
     await s.win("Patient window").getByRole("button", { name: "Readings", exact: true }).click();
-    await s.patient.getByRole("heading", { name: "Home readings" }).waitFor({ timeout: 60_000 });
+    await s.patient.getByRole("heading", { name: "Home readings", exact: true }).waitFor({ timeout: 60_000 });
     await pause(s.page, 1500);
     await s.patient.getByRole("button", { name: "Add reading" }).click();
     await pause(s.page, 1500);

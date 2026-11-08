@@ -2,7 +2,7 @@ set -euo pipefail
 : "${HOST:?set HOST, e.g. HOST=203-0-113-5.sslip.io}"
 cat > /etc/systemd/system/careos.service <<UNIT
 [Unit]
-Description=CareOS web app
+Description=Care ON web app
 After=network-online.target
 Wants=network-online.target
 
