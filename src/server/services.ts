@@ -199,6 +199,15 @@ export async function clinicianAction(
   return prescriptionView(clinician, workflowId);
 }
 
+/** Demo only. The caller must already have checked demo mode and the operator role. */
+export async function resetDemo() {
+  const store = runtime().store;
+  if (!store.resetDemoData) throw new HttpError(501, "not_supported", "This storage cannot be reset");
+  const counts = await store.resetDemoData();
+  runtime().clock.offsetMs = 0; // time is real again
+  return counts;
+}
+
 export interface PrescriptionSummary {
   workflowId: string;
   patientId: string;

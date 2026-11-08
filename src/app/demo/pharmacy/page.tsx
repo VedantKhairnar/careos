@@ -64,6 +64,33 @@ function Console() {
     }
   }
 
+  async function startAfresh() {
+    if (!window.confirm("Start afresh? This clears all demo activity (plans, prescriptions, questions, notifications, care gaps and AI logs) so the demo can begin from an empty state. The analytics history is kept.")) return;
+    setBusy("reset");
+    try {
+      const r = await api<{ events: number }>("/api/demo/reset", { method: "POST" });
+      toast(`Cleared ${r.events} demo events. Alex and Maria now have no plan or prescription.`);
+      await Promise.all([wf.reload(), clock.reload()]);
+    } catch (e) {
+      toast(e instanceof ApiError ? e.message : "Could not reset the demo.", "danger");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function loadSample() {
+    setBusy("sample");
+    try {
+      await api("/api/demo/seed", { method: "POST" });
+      toast("Sample data loaded: plans and prescriptions for Alex and Maria.");
+      await wf.reload();
+    } catch (e) {
+      toast(e instanceof ApiError ? e.message : "Could not load sample data.", "danger");
+    } finally {
+      setBusy(null);
+    }
+  }
+
   async function advance(body: { advanceMinutes: number } | { reset: true }) {
     try {
       await api("/api/demo/clock", { body });
@@ -84,6 +111,20 @@ function Console() {
           <LogOut aria-hidden className="h-4 w-4" /> Switch role
         </button>
       </header>
+
+      <Card title="Demo controls" action={<Badge tone="info">Demo only</Badge>}>
+        <p className="text-sm text-muted">
+          <strong>Start afresh</strong> clears all demo activity so the doctor can create everything live from an empty state. The analytics history is kept. <strong>Load sample data</strong> does the opposite and pre-fills plans and prescriptions.
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Button variant="danger" loading={busy === "reset"} disabled={busy !== null} onClick={startAfresh}>
+            Start afresh
+          </Button>
+          <Button variant="secondary" loading={busy === "sample"} disabled={busy !== null} onClick={loadSample}>
+            Load sample data
+          </Button>
+        </div>
+      </Card>
 
       <Card title="Demo clock" action={<Badge tone="info">Demo only</Badge>}>
         <p className="flex items-center gap-2 text-sm">

@@ -1,7 +1,7 @@
 import type pg from "pg";
 import type { CareEvent } from "@/domain/events";
 import { getPool } from "./db";
-import type { AgentExecution, Analytics, EventStore, GapSnapshot } from "./store";
+import type { AgentExecution, Analytics, EventStore, GapSnapshot, ResetCounts } from "./store";
 
 /** Rows loaded by scripts/seed-history.ts. They feed analytics but never appear in patient or clinician screens. */
 export const SYNTHETIC_SOURCE = "synthetic-history";
@@ -143,6 +143,37 @@ export class PgEventStore implements EventStore {
     } finally {
       c.release();
     }
+  }
+
+  /**
+   * Demo reset. Deletes only fictional LIVE activity: everything not from the synthetic history, plus the app's own
+   * working tables. The synthetic history (source_system = 'synthetic-history', workflow ids hx_*) is never touched.
+   * Idempotency keys go with their events so the same actions can be taken again. Continuous aggregates are then
+   * refreshed so analytics stop counting the deleted rows.
+   */
+  async resetDemoData(): Promise<ResetCounts> {
+    const c = await this.pool.connect();
+    let counts: ResetCounts;
+    try {
+      await c.query("begin");
+      await c.query("delete from event_idempotency where event_id in (select event_id from care_events where source_system <> $1)", [SYNTHETIC_SOURCE]);
+      const ev = await c.query("delete from care_events where source_system <> $1", [SYNTHETIC_SOURCE]);
+      await c.query("delete from workflow_metrics where workflow_id not like 'hx\\_%'");
+      const gaps = await c.query("delete from care_gap_events where workflow_id not like 'hx\\_%'");
+      await c.query("delete from care_gaps_open");
+      const agents = await c.query("delete from agent_executions");
+      await c.query("commit");
+      counts = { events: ev.rowCount ?? 0, gaps: gaps.rowCount ?? 0, agentCalls: agents.rowCount ?? 0 };
+    } catch (err) {
+      await c.query("rollback").catch(() => {});
+      throw err;
+    } finally {
+      c.release();
+    }
+    for (const view of ["care_events_hourly", "workflow_metrics_daily", "care_gaps_daily", "agent_latency_hourly", "notifications_daily"]) {
+      await this.pool.query(`call refresh_continuous_aggregate('${view}', null, null)`);
+    }
+    return counts;
   }
 
   async analytics(): Promise<Analytics> {

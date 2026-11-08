@@ -112,6 +112,39 @@ describe.skipIf(!enabled)("Postgres / TimescaleDB store", () => {
     expect(a.storage.hypertableBytes).toBeGreaterThan(0);
   });
 
+  it("resets live demo data but never the synthetic history, and refreshes the aggregates", async () => {
+    const stamp = new Date().toISOString();
+    // synthetic history that must survive
+    await store.append(ev("prescription.authorized", "clinician", { workflowId: "hx_keep_1", patientId: "hist_9", sourceSystem: SYNTHETIC_SOURCE, occurredAt: stamp, recordedAt: stamp }));
+    await query("insert into workflow_metrics (occurred_at, workflow_id, patient_id, metric, value_seconds, simulated) values ($1,'hx_keep_1','hist_9','ack_latency',42,true)", [stamp]);
+    await query("insert into care_gap_events (occurred_at, gap_key, rule, patient_id, workflow_id, responsible, transition) values ($1,'k:hx_keep_1','pharmacy_ack_overdue','hist_9','hx_keep_1','clinician','detected')", [stamp]);
+    // live demo data that must go
+    await store.append(ev("prescription.authorized", "clinician", { workflowId: "live_1", occurredAt: stamp, recordedAt: stamp }));
+    await store.recordGaps([{ key: "pharmacy_ack_overdue:live_1", rule: "pharmacy_ack_overdue", patientId: "p1", workflowId: "live_1", responsible: "clinician" }]);
+    await store.logAgentExecution({ agent: "patient", patientId: "p1", startedAt: stamp, durationMs: 5, ok: true });
+    const liveKeys = (await query("select count(*)::int n from event_idempotency")).at(0)!.n as number;
+    expect(liveKeys).toBeGreaterThan(0);
+
+    const counts = await store.resetDemoData();
+    expect(counts.events).toBeGreaterThan(0);
+
+    const left = await query("select count(*) filter (where source_system = $1)::int synth, count(*) filter (where source_system <> $1)::int live from care_events", [SYNTHETIC_SOURCE]);
+    expect(left[0]).toEqual({ synth: 2, live: 0 }); // both synthetic rows (one from an earlier test, one added here) survive
+    expect((await query("select count(*)::int n from workflow_metrics where workflow_id = 'hx_keep_1'"))[0].n).toBe(1);
+    expect((await query("select count(*)::int n from care_gap_events where workflow_id = 'hx_keep_1'"))[0].n).toBe(1);
+    expect((await query("select count(*)::int n from care_gap_events where workflow_id = 'live_1'"))[0].n).toBe(0);
+    expect((await query("select count(*)::int n from care_gaps_open"))[0].n).toBe(0);
+    expect((await query("select count(*)::int n from agent_executions"))[0].n).toBe(0);
+    // keys of the deleted live events are gone (so the same actions can be repeated); the two synthetic rows keep theirs
+    expect((await query("select count(*)::int n from event_idempotency"))[0].n).toBe(2);
+    expect((await query("select count(*)::int n from event_idempotency where event_id not in (select event_id from care_events)"))[0].n).toBe(0);
+    // the same keys are usable again
+    expect(await store.append(ev("notification.sent", "system", { workflowId: "again", idempotencyKey: `again-${schema}` }))).toBe(true);
+    const a = await store.analytics();
+    expect(a.available && a.totals.openGaps).toBe(0);
+    expect(a.available && a.totals.syntheticEvents).toBeGreaterThanOrEqual(1);
+  });
+
   it("round-trips agent executions", async () => {
     await store.logAgentExecution({ agent: "doctor", patientId: "p9", startedAt: new Date().toISOString(), durationMs: 33.6, ok: false, error: "boom", tool: "draft_care_plan", model: "m" });
     const last = (await store.listAgentExecutions()).at(-1)!;

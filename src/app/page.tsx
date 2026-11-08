@@ -49,12 +49,27 @@ export default function SignIn() {
   const qc = useQueryClient();
   const [busy, setBusy] = useState<string | null>(null);
 
+  async function startAfresh() {
+    if (!window.confirm("Start afresh? This clears all demo activity (plans, prescriptions, questions, notifications, care gaps and AI logs) so the demo can begin from an empty state. The analytics history is kept.")) return;
+    setBusy("reset");
+    try {
+      const me = await api<{ as: string }>("/api/auth/session", { body: ROLES.find((r) => r.key === "pharmacy")!.body });
+      setActingAs(me.as);
+      const r = await api<{ events: number }>("/api/demo/reset", { method: "POST" });
+      qc.clear();
+      toast(`Cleared ${r.events} demo events. Alex and Maria now have no plan or prescription.`);
+    } catch (e) {
+      toast(e instanceof ApiError ? e.message : "Could not reset the demo", "danger");
+    } finally {
+      setBusy(null);
+    }
+  }
+
   async function enter(r: (typeof ROLES)[number]) {
     setBusy(r.key);
     try {
       const me = await api<{ as: string }>("/api/auth/session", { body: r.body });
       setActingAs(me.as); // this tab now acts as this person, whatever other tabs are signed in as
-      await api("/api/demo/seed", { method: "POST" });
       qc.clear(); // drop anything cached for the previous role
       router.push(r.to);
     } catch (e) {
@@ -99,6 +114,20 @@ export default function SignIn() {
           </li>
         ))}
       </ul>
+
+      <div className="rounded-xl border border-line p-4 text-sm">
+        <p className="font-medium">Running the demo?</p>
+        <p className="mt-1 text-muted">
+          The demo starts empty: the doctor creates the plan, prescription and everything else live. Pressing <strong>Start afresh</strong> clears earlier demo activity first (the analytics history is kept). Sample data can be loaded from the pharmacy simulator.
+        </p>
+        <button
+          onClick={startAfresh}
+          disabled={busy !== null}
+          className="mt-3 inline-flex min-h-11 items-center rounded-xl border border-danger/30 bg-danger-bg px-4 font-semibold text-danger disabled:opacity-50"
+        >
+          {busy === "reset" ? "Clearing…" : "Start afresh"}
+        </button>
+      </div>
     </main>
   );
 }

@@ -30,6 +30,14 @@ export interface EventStore {
   /** Optional: stores that persist care-gap transitions (Tiger Data) implement these. */
   recordGaps?(gaps: GapSnapshot[]): Promise<void>;
   analytics?(): Promise<Analytics>;
+  /** Demo only: clears all fictional live activity. Never touches synthetic analytics history. */
+  resetDemoData?(): Promise<ResetCounts>;
+}
+
+export interface ResetCounts {
+  events: number;
+  gaps: number;
+  agentCalls: number;
 }
 
 export interface GapSnapshot {
@@ -93,5 +101,12 @@ export class InMemoryEventStore implements EventStore {
   }
   async listAgentExecutions() {
     return [...this.agentLog];
+  }
+  async resetDemoData(): Promise<ResetCounts> {
+    const counts = { events: this.events.length, gaps: 0, agentCalls: this.agentLog.length };
+    this.events = [];
+    this.keys.clear();
+    this.agentLog = [];
+    return counts;
   }
 }

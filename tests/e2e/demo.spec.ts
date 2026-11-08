@@ -27,6 +27,21 @@ test("live demo across three tabs in one browser", async ({ context }) => {
     await expect(alex.getByRole("heading", { name: /Good (morning|afternoon|evening), Alex/ })).toBeVisible();
   });
 
+  await test.step("Start afresh empties the demo, so everything after is created live", async () => {
+    await pharm.goto("/demo/pharmacy");
+    pharm.once("dialog", (d) => d.accept()); // the confirmation prompt
+    await pharm.getByRole("button", { name: "Start afresh" }).click();
+    await expect(pharm.getByText(/Cleared \d+ demo events/)).toBeVisible({ timeout: 30_000 });
+    await expect(pharm.getByText("No prescriptions have been sent to the pharmacy yet")).toBeVisible();
+    await alex.goto("/patient");
+    await expect(alex.getByText("No prescriptions yet")).toBeVisible();
+    await expect(alex.getByText("Nothing scheduled right now")).toBeVisible();
+    await doctor.goto("/doctor/patients");
+    await expect(doctor.getByText("0 approved plans").first()).toBeVisible();
+    await shot(alex, "00-alex-home-after-start-afresh");
+    await checkA11y(alex, "patient home (empty)");
+  });
+
   await test.step("doctor drafts a plan from visit notes with AI, then reviews and approves it", async () => {
     await doctor.goto("/doctor/patients");
     await doctor.getByRole("link", { name: /Alex Rivera/ }).click();
