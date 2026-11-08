@@ -21,7 +21,7 @@
 ![Tiger Data](https://img.shields.io/badge/Tiger_Data-TimescaleDB-fdb515?style=flat-square&logo=timescale&logoColor=black)
 ![Vultr](https://img.shields.io/badge/Vultr-007bfc?style=flat-square&logo=vultr&logoColor=white)
 ![Playwright](https://img.shields.io/badge/Playwright-2ead33?style=flat-square&logo=playwright&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-140_passing-16a34a?style=flat-square)
+![Tests](https://img.shields.io/badge/tests-142_passing-16a34a?style=flat-square)
 
 </div>
 
@@ -33,13 +33,13 @@ Most of care happens **after** the appointment. The doctor writes a plan, a pres
 
 Care ON gives the patient, the doctor and the pharmacy **one shared, auditable timeline**, and puts a small team of AI agents on top of it. The agents **investigate, draft and check each other's work. A human always decides.**
 
-> 🧭 **In one picture:** a visit status bar for the patient, a "your next action" board for the doctor, and a live log that shows exactly what every agent did and why.
+> 🧭 **In one picture:** a visit status bar for the patient, a "your next action" board for the doctor, and a live activity timeline that shows exactly what every person, the system and every agent did, and why.
 
 ---
 
 ## 🎬 See it in action
 
-> Recorded from the real running product (real models, no mock-ups). The three windows are the doctor, the patient and the pharmacy simulator, side by side on the **Demo stage**, with the live agent log on the right.
+> Recorded from the real running product (real models, no mock-ups). The three windows are the doctor, the patient and the pharmacy simulator, side by side on the **Demo stage**, with the live activity timeline on the right.
 
 ### The whole care cycle, with the agents working
 <p align="center"><img src="assets/readme/demo-cycle.gif" alt="Doctor drafts a plan from visit notes, approves it, sends a prescription. The pharmacy reports a delay and the agents investigate, draft and get checked before a human approves." width="100%"/></p>
@@ -74,11 +74,11 @@ The app **describes** change in plain words ("up 5 bpm from the previous reading
 |---|---|
 | <img src="assets/readme/doctor-proposal.png" alt="Care coordinator proposal waiting for the doctor, marked time-sensitive with the reason"/> | <img src="assets/readme/patient-visit.png" alt="Patient visit status bar showing a pharmacy delay and what happens next"/> |
 
-| Live agent log | Agent room |
+| Live activity timeline | Agent room |
 |---|---|
 | <img src="assets/readme/agent-log.png" alt="Timestamped log of coordinator, writer and safety reviewer steps"/> | <img src="assets/readme/agent-room.png" alt="Agent room showing a run step by step"/> |
 
-<img src="assets/readme/stage-explainer.png" alt="Visit explained in plain words, with the live log showing the check against the plan"/>
+<img src="assets/readme/stage-explainer.png" alt="Visit explained in plain words, with the live timeline showing the check against the plan"/>
 
 </details>
 
@@ -92,7 +92,7 @@ The app **describes** change in plain words ("up 5 bpm from the previous reading
 | 🎯 | **Doctor Case board** | One patient, one **"Your next action"** at a time: record the visit, approve the plan, send a prescription, review the agents' proposal, answer a question. No hunting through tabs. |
 | 🤖 | **Care Coordinator** | Wakes by itself when the pharmacy reports a delay, a question or a rejection. Investigates with read-only tools, decides how urgent it is, and proposes. |
 | ✍️ | **Writer + Safety Reviewer** | The Coordinator hands wording to a Writer. An independent Reviewer and code checks reject invented times, advice and reassurance. |
-| 📜 | **Live agent log** | Every model call, tool call, hand-off, rejection and human decision, timestamped, in a dock on every doctor page and a column on the Stage. |
+| 📜 | **Live activity timeline** | One timeline of everything that happens: what the doctor, patient and pharmacy did, what the system did, and every agent model call, tool call, hand-off, rejection and human decision, timestamped. Filter by **All**, **Agents** or **People and system**. Shown in a dock on every doctor page and a column on the Stage. |
 | 💬 | **Patient assistant** | Answers only from the patient's approved plan through permissioned tools. Clinical questions go to a human. |
 | 📖 | **Visit Explainer** | Turns the approved plan into everyday words with a glossary. Every line is checked in code against the plan; unsupported lines are removed. |
 | ❤️ | **Home readings** | Patient-reported heart rate, blood pressure, pain and temperature, with plain-word trends and clinician-set ranges. |
@@ -168,7 +168,7 @@ flowchart LR
             PA["Patient assistant"]
             EX["Visit Explainer"]
         end
-        LOG["Live agent log"]
+        LOG["Live activity timeline"]
     end
 
     subgraph Models["Models"]
@@ -264,13 +264,13 @@ pnpm dev
 > No database? Add `CAREOS_STORE=memory` to run on a throwaway in-memory store.
 
 ### 3. Open the Demo stage
-Go to **`/demo/stage`**. It signs in the doctor, the patient and the pharmacy at once and shows them side by side with the live agent log.
+Go to **`/demo/stage`**. It signs in the doctor, the patient and the pharmacy at once and shows them side by side with the live activity timeline.
 
 1. Press **Start afresh**.
 2. **Doctor:** the board says "Record this visit". The notes are pre-filled, so press *Create draft for review*, then tick the box and *Approve care plan*.
 3. **Doctor:** "Send a prescription". The medicine is pre-filled from the plan, so press *Authorize prescription*.
 4. **Pharmacy:** *Receive*, *Acknowledge*, then **Report a delay**.
-5. Watch the **log column**: the Coordinator wakes, investigates, hands off to the Writer, gets reviewed, and proposes.
+5. Watch the **activity column**: you see each human step, the system steps, and then the Coordinator wake, investigate, hand off to the Writer, get reviewed, and propose. Use the filter (**All**, **Agents**, **People and system**) to follow just one side.
 6. **Doctor:** "Review what the agents prepared". Approve it. The patient's status bar and Updates show the message.
 
 ### 4. Optional: Tiger Data
@@ -283,7 +283,7 @@ node --env-file=.env.local --import tsx scripts/bench.ts           # measure agg
 ### 5. Test it
 ```bash
 pnpm typecheck && pnpm lint
-pnpm test                                       # 140 unit and API tests (memory store, scripted model)
+pnpm test                                       # 142 unit and API tests (memory store, scripted model)
 
 # 9 database integration tests, in a throwaway schema:
 set -a; . ./.env.local; set +a; CAREOS_TEST_DB=1 pnpm exec vitest run tests/pg.test.ts
@@ -339,7 +339,7 @@ tests/            unit and API tests, database tests, real-browser tests
 
 ## ✅ Quality
 
-- **140** unit and API tests, with a scripted model so nothing calls a real service
+- **142** unit and API tests, with a scripted model so nothing calls a real service
 - **9** opt-in database integration tests on a throwaway schema
 - Real-browser end-to-end tests in Chrome with real models: the full demo, the agents flow, the one-screen Stage, home readings, phone and tablet layouts
 - An accessibility scan (axe, WCAG 2 A/AA) with a sanity test that proves the scanner really flags a bad page
