@@ -28,6 +28,7 @@ const OTHER_EVENT_ACTORS: Partial<Record<EventType, ActorRole[]>> = {
   "notification.acknowledged": ["patient", "caregiver", "clinician"],
   "followup.completed": ["clinician"],
   "task.confirmed": ["patient", "caregiver"],
+  "dose.reported": ["patient", "caregiver"],
   "gap.resolved": ["clinician", "system"],
 };
 

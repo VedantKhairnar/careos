@@ -5,7 +5,15 @@ import { prescriptionStatus } from "@/domain/status";
 import { HttpError, rejection } from "./http";
 import { runtime } from "./runtime";
 
-const SYSTEM: Actor = { id: "careos-orchestrator", role: "system" };
+export const SYSTEM: Actor = { id: "careos-orchestrator", role: "system" };
+
+/** Pharmacy updates the patient must be told about. Each one also records a system `notification.sent`. */
+const IMPORTANT_PHARMACY_EVENTS = new Set<EventType>([
+  "prescription.delayed",
+  "prescription.clarification_requested",
+  "prescription.ready",
+  "prescription.rejected",
+]);
 
 export const PHARMACY_EVENT_TYPES = [
   "prescription.received",
@@ -24,7 +32,7 @@ export const CLINICIAN_ACTIONS = {
   cancel: "prescription.cancelled",
 } as const satisfies Record<string, EventType>;
 
-function envelope(
+export function envelope(
   actor: Actor,
   base: { workflowId: string; patientId: string; type: EventType; idempotencyKey: string; correlationId: string },
   extra: { payload?: Record<string, unknown>; simulated?: boolean; sourceSystem?: string } = {},
@@ -48,7 +56,7 @@ function envelope(
   };
 }
 
-async function submit(actor: Actor, event: ReturnType<typeof envelope>) {
+export async function submit(actor: Actor, event: ReturnType<typeof envelope>) {
   const r = await runtime().orchestrator.handle(actor, event);
   if (r.status === "rejected") throw rejection(r.code, r.reason);
   return r;
@@ -61,7 +69,12 @@ export interface CreatePrescriptionInput {
 }
 
 /** Clinician authorizes; the orchestrator then records transmission. Safe to retry with the same key. */
-export async function createPrescription(clinician: Actor, input: CreatePrescriptionInput, idempotencyKey?: string) {
+export async function createPrescription(
+  clinician: Actor,
+  input: CreatePrescriptionInput,
+  idempotencyKey?: string,
+  opts: { simulated?: boolean; sourceSystem?: string } = {},
+) {
   const key = idempotencyKey ?? randomUUID();
   const workflowId = `rx_${createHash("sha256").update(key).digest("hex").slice(0, 16)}`;
   const correlationId = `corr_${workflowId}`;
@@ -71,6 +84,8 @@ export async function createPrescription(clinician: Actor, input: CreatePrescrip
     clinician,
     envelope(clinician, { ...base, type: "prescription.authorized", idempotencyKey: `${key}:authorized` }, {
       payload: { medicationReference: input.medicationReference, approvedInstructions: input.approvedInstructions ?? null },
+      simulated: opts.simulated,
+      sourceSystem: opts.sourceSystem,
     }),
   );
   await submit(
@@ -132,6 +147,23 @@ export async function applyPharmacyEvent(
     ),
   );
   if (r.status === "rejected") throw rejection(r.code, r.reason);
+  if (r.status === "applied" && IMPORTANT_PHARMACY_EVENTS.has(input.type)) {
+    // Record that the patient must be told. Unacknowledged ones can later become a care gap.
+    await submit(
+      SYSTEM,
+      envelope(
+        SYSTEM,
+        {
+          workflowId: input.workflowId,
+          patientId: existing[0].patientId,
+          type: "notification.sent",
+          idempotencyKey: `notif:${r.event.eventId}`,
+          correlationId: `corr_${input.workflowId}`,
+        },
+        { payload: { important: true, notificationId: r.event.eventId, kind: input.type }, simulated: true },
+      ),
+    );
+  }
   return { result: r.status, ...(await prescriptionViewAsSystem(input.workflowId)) };
 }
 
@@ -159,6 +191,42 @@ export async function clinicianAction(
     }),
   );
   return prescriptionView(clinician, workflowId);
+}
+
+export interface PrescriptionSummary {
+  workflowId: string;
+  patientId: string;
+  medicationReference: string;
+  state: string;
+  text: string;
+  simulated: boolean;
+  lastUpdated: string;
+}
+
+/** Prescriptions the caller may see: a patient their own, a clinician all (optionally one patient). */
+export async function listPrescriptions(actor: Actor, patientId?: string): Promise<PrescriptionSummary[]> {
+  const patientSide = actor.role === "patient" || actor.role === "caregiver";
+  if (!patientSide && actor.role !== "clinician") throw new HttpError(403, "forbidden", "Not allowed");
+  const events = patientSide
+    ? await runtime().store.listByPatient(actor.patientId ?? "")
+    : patientId
+      ? await runtime().store.listByPatient(patientId)
+      : await runtime().store.listAll();
+  const ids = [...new Set(events.filter((e) => e.type === "prescription.authorized").map((e) => e.workflowId))];
+  return ids.map((id) => {
+    const evs = events.filter((e) => e.workflowId === id);
+    const s = prescriptionStatus(evs);
+    const auth = evs.find((e) => e.type === "prescription.authorized")!;
+    return {
+      workflowId: id,
+      patientId: auth.patientId,
+      medicationReference: String(auth.payload.medicationReference ?? ""),
+      state: s.state,
+      text: patientSide ? s.patientText : s.clinicianText,
+      simulated: auth.simulated,
+      lastUpdated: evs.map((e) => e.recordedAt).sort().at(-1) ?? auth.recordedAt,
+    };
+  });
 }
 
 export async function listWorkflows(): Promise<{ workflowId: string; patientId: string; state: string; text: string }[]> {
