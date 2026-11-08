@@ -12,7 +12,7 @@ import { DOCTOR_TOOLS } from "./tools";
 /** The Doctor Agent has its own identity. It can draft and submit for review, never approve. */
 export const DOCTOR_AGENT_ACTOR: Actor = { id: "doctor-agent", role: "agent" };
 
-export const DRAFT_SYSTEM = `You turn a clinician's own visit notes into a structured care-plan DRAFT for that clinician to review. A human will read and approve it before any patient sees it.
+export const DRAFT_SYSTEM = `You turn a clinician's own visit notes into a structured care-plan DRAFT for that clinician to review. Never put the word "draft" in the plan title; use a short plain title such as "Recovery plan for <condition>". A human will read and approve it before any patient sees it.
 
 HARD RULES
 1. Use ONLY what is written in the notes. Never add instructions, medicines, doses, times, dates, follow-ups or warning signs that are not in the notes.

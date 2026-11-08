@@ -9,6 +9,9 @@ import { Button, useToast } from "@/components/ui";
 import { api, ApiError, FRAME_PREFIX, setActingAs } from "@/lib/api";
 import { useApi } from "@/lib/useApi";
 
+/** Each window is rendered as a phone-sized screen, scaled down a little so four fit side by side on a laptop. */
+const SCALE = 0.85;
+
 const WHO = [
   { key: "doctor", label: "Doctor", sub: "Dr. Chen", src: "/doctor/case", body: { role: "clinician", displayName: "Dr. Chen" } },
   { key: "patient", label: "Patient", sub: "Alex Rivera", src: "/patient/visit", body: { role: "patient", patientId: "p_alex", displayName: "Alex Rivera" } },
@@ -54,6 +57,11 @@ export default function Stage() {
       const keys: Record<string, string> = {};
       for (const w of WHO) keys[w.key] = (await api<{ as: string }>("/api/auth/session", { body: w.body })).as;
       setActingAs(keys.pharmacy);
+      try {
+        localStorage.setItem("careos-large-text", "0"); // the windows share this setting; the Stage needs normal-size text to fit
+      } catch {
+        /* storage unavailable: default size */
+      }
       return keys;
     },
   });
@@ -84,7 +92,7 @@ export default function Stage() {
   const s = STEPS[step];
   return (
     <div className="flex h-screen flex-col bg-bg">
-      <header className="border-b border-line bg-surface px-3 py-2">
+      <header className="shrink-0 border-b border-line bg-surface px-3 py-1.5">
         <div className="flex flex-wrap items-center gap-2">
           <p className="font-bold text-accent">CareOS · Demo stage</p>
           <Button variant="danger" loading={busy} onClick={startAfresh}>
@@ -98,7 +106,7 @@ export default function Stage() {
           </button>
         </div>
         {guide && (
-          <div className="mt-2 flex flex-wrap items-center gap-2 rounded-xl bg-info-bg p-2 text-sm text-info">
+          <div className="mt-1.5 flex flex-wrap items-center gap-2 rounded-xl bg-info-bg px-3 py-1.5 text-sm text-info">
             <span className="font-semibold">
               Step {step + 1} of {STEPS.length} · {s.who}: {s.title}
             </span>
@@ -117,10 +125,10 @@ export default function Stage() {
       {!ready.data && !ready.isError && <p className="p-4 text-muted">Signing in the doctor, the patient and the pharmacy…</p>}
 
       {ready.data && (
-        <div className="grid min-h-0 flex-1 grid-cols-1 gap-2 overflow-y-auto p-2 lg:grid-cols-[1.25fr_1fr_1fr_1fr] lg:overflow-hidden">
+        <div className="grid min-h-0 flex-1 grid-cols-1 gap-2 overflow-y-auto p-2 sm:grid-cols-2 lg:grid-cols-4 lg:overflow-hidden">
           {WHO.map((w) => (
             <section key={w.key + gen} aria-label={`${w.label} window`} className="flex h-[75vh] min-h-0 flex-col overflow-hidden rounded-xl border border-line bg-surface lg:h-auto">
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-line bg-surface-2 px-3 py-1.5 text-sm">
+              <div className="flex items-center gap-3 overflow-x-auto whitespace-nowrap border-b border-line bg-surface-2 px-3 py-1.5 text-sm">
                 <span className="font-semibold">
                   {w.label} <span className="font-normal text-muted">· {w.sub}</span>
                 </span>
@@ -130,7 +138,16 @@ export default function Stage() {
                   </button>
                 ))}
               </div>
-              <iframe key={src[w.key]?.n ?? 0} name={FRAME_PREFIX + ready.data[w.key]} src={src[w.key]?.to ?? w.src} title={`${w.label} window (${w.sub})`} className="min-h-0 w-full flex-1 bg-bg" />
+              <div className="relative min-h-0 flex-1 overflow-hidden bg-bg">
+                <iframe
+                  key={src[w.key]?.n ?? 0}
+                  name={FRAME_PREFIX + ready.data[w.key]}
+                  src={src[w.key]?.to ?? w.src}
+                  title={`${w.label} window (${w.sub})`}
+                  className="absolute left-0 top-0 border-0 bg-bg"
+                  style={{ width: `${100 / SCALE}%`, height: `${100 / SCALE}%`, transform: `scale(${SCALE})`, transformOrigin: "0 0" }}
+                />
+              </div>
             </section>
           ))}
           <section aria-label="Live agent log" className="flex h-[75vh] min-h-0 flex-col overflow-hidden rounded-xl border border-line bg-surface lg:h-auto">

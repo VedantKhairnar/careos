@@ -129,7 +129,7 @@ test("live demo across three tabs in one browser", async ({ context }) => {
     await press("Ask clinician a question");
     await expect(rx.getByText("Waiting for the clinician to answer the question.")).toBeVisible();
     await doctor.goto("/doctor");
-    const q = doctor.locator("li").filter({ hasText: RX }).first();
+    const q = doctor.locator("li").filter({ hasText: RX }).filter({ has: doctor.getByRole("button", { name: "Resolve pharmacy question" }) }).first();
     await expect(q.getByRole("button", { name: "Resolve pharmacy question" })).toBeVisible({ timeout: 30_000 });
     await shot(doctor, "06-doctor-overview-pharmacy-question");
     await q.getByRole("button", { name: "Resolve pharmacy question" }).click();
