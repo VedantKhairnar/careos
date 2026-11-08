@@ -8,11 +8,12 @@ export type PrescriptionState =
   | "ACKNOWLEDGED"
   | "PROCESSING"
   | "DELAYED"
-  | "CLARIFICATION_REQUESTED"
-  | "READY"
+  | "CLARIFICATION_REQUIRED"
+  | "READY_FOR_PICKUP"
   | "PICKED_UP"
   | "CANCELLED"
-  | "REJECTED";
+  | "REJECTED"
+  | "FAILED";
 
 interface Rule {
   from: PrescriptionState[];
@@ -28,14 +29,14 @@ const NON_TERMINAL: PrescriptionState[] = [
   "ACKNOWLEDGED",
   "PROCESSING",
   "DELAYED",
-  "CLARIFICATION_REQUESTED",
-  "READY",
+  "CLARIFICATION_REQUIRED",
+  "READY_FOR_PICKUP",
 ];
 
 /**
  * Allowed transitions. Note what is absent: no "agent" role appears anywhere,
  * so an LLM can never authorize, advance or complete a prescription.
- * READY and PICKED_UP require a pharmacy (simulator) actor, so they can only
+ * READY_FOR_PICKUP and PICKED_UP require a pharmacy (simulator) actor, so they can only
  * follow a genuine pharmacy event.
  */
 export const PRESCRIPTION_TRANSITIONS: Partial<Record<EventType, Rule>> = {
@@ -55,22 +56,24 @@ export const PRESCRIPTION_TRANSITIONS: Partial<Record<EventType, Rule>> = {
   },
   "prescription.clarification_requested": {
     from: ["ACKNOWLEDGED", "PROCESSING"],
-    to: "CLARIFICATION_REQUESTED",
+    to: "CLARIFICATION_REQUIRED",
     actors: ["pharmacy_sim"],
   },
   // Only a clinician can resolve a clarification (clinical changes need human authority).
   "prescription.clarification_resolved": {
-    from: ["CLARIFICATION_REQUESTED"],
+    from: ["CLARIFICATION_REQUIRED"],
     to: "PROCESSING",
     actors: ["clinician"],
   },
-  "prescription.ready": { from: ["PROCESSING"], to: "READY", actors: ["pharmacy_sim"] },
-  "prescription.picked_up": { from: ["READY"], to: "PICKED_UP", actors: ["pharmacy_sim"] },
+  "prescription.ready": { from: ["PROCESSING"], to: "READY_FOR_PICKUP", actors: ["pharmacy_sim"] },
+  "prescription.picked_up": { from: ["READY_FOR_PICKUP"], to: "PICKED_UP", actors: ["pharmacy_sim"] },
   "prescription.rejected": {
     from: ["RECEIVED", "ACKNOWLEDGED", "PROCESSING"],
     to: "REJECTED",
     actors: ["pharmacy_sim"],
   },
+  // Transmission itself failed (system-detected); the prescription never reached the pharmacy.
+  "prescription.failed": { from: ["TRANSMITTED"], to: "FAILED", actors: ["system"] },
   "prescription.cancelled": { from: NON_TERMINAL, to: "CANCELLED", actors: ["clinician"] },
 };
 

@@ -36,6 +36,7 @@ export const EventType = z.enum([
   "prescription.pickup_reported", // patient-reported; does NOT change prescription state
   "prescription.cancelled",
   "prescription.rejected",
+  "prescription.failed",
   "notification.sent",
   "notification.acknowledged",
   "followup.completed",

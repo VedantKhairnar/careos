@@ -112,7 +112,7 @@ describe("2-3. workflow transitions", () => {
     }
     await send(patient1, "prescription.pickup_reported");
     const events = await store.listByWorkflow("rx1");
-    expect(foldPrescriptionState(events)).toBe("READY");
+    expect(foldPrescriptionState(events)).toBe("READY_FOR_PICKUP");
     await send(pharmacy, "prescription.picked_up");
     expect(foldPrescriptionState(await store.listByWorkflow("rx1"))).toBe("PICKED_UP");
   });
@@ -295,7 +295,7 @@ describe("scenario A: post-surgery prescription with a pharmacy delay", () => {
     advance(5);
     expect(detectGaps(await store.listByWorkflow("rx1"), iso())).toHaveLength(0);
     const status = prescriptionStatus(await store.listByWorkflow("rx1"));
-    expect(status.state).toBe("READY");
+    expect(status.state).toBe("READY_FOR_PICKUP");
     expect(status.patientText).toBe("Ready for pickup.");
     // Completion is only evidenced by a pharmacy-confirmed pickup.
     await send(pharmacy, "prescription.picked_up");

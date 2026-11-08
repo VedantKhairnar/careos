@@ -122,7 +122,7 @@ export function detectGaps(
     const clar = last("prescription.clarification_requested");
     if (
       clar &&
-      state === "CLARIFICATION_REQUESTED" &&
+      state === "CLARIFICATION_REQUIRED" &&
       minutes(clar.recordedAt, now) > config.clarificationDeadlineMinutes
     ) {
       push(
