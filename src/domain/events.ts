@@ -45,6 +45,8 @@ export const EventType = z.enum([
   "question.asked", // patient (or the assistant on their behalf) asks the care team
   "question.answered", // clinician only
   "gap.resolved",
+  "agent.suggestion_created", // an agent drafted something for a clinician to review. Changes no state.
+  "agent.suggestion_reviewed", // clinician only: approved (sent to the patient) or dismissed
 ]);
 export type EventType = z.infer<typeof EventType>;
 

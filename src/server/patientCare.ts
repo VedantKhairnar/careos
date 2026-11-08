@@ -123,7 +123,7 @@ export async function reportDose(actor: Actor, input: z.infer<typeof DoseReportS
 
 export interface NotificationView {
   id: string;
-  kind: "care_plan" | "prescription";
+  kind: "care_plan" | "prescription" | "care_team_message";
   title: string;
   important: boolean;
   at: string;
@@ -150,6 +150,10 @@ async function derive(patientId: string): Promise<{ list: NotificationView[]; ev
       const ev = byId.get(item.source.eventId)!;
       list.push({ id: ev.eventId, kind: "prescription", title: item.label, important: IMPORTANT_KINDS.has(ev.type), at: item.at, acknowledged: acked.has(ev.eventId), source: item.source });
     }
+  }
+  // Messages a clinician approved after an agent drafted them. Shown as the clinician's message, never as the agent's.
+  for (const e of events.filter((x) => x.type === "notification.sent" && x.payload.kind === "care_team_message")) {
+    list.push({ id: e.eventId, kind: "care_team_message", title: `Message from your care team: ${String(e.payload.message ?? "")}`, important: true, at: e.recordedAt, acknowledged: acked.has(e.eventId), source: sourceOf(e) });
   }
   list.sort((a, b) => b.at.localeCompare(a.at));
   return { list, events };

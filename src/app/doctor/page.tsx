@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { GAP_LABEL, RxBadge } from "@/components/rx";
 import { RxActions } from "@/components/RxActions";
+import { AgentSuggestionsCard } from "@/components/AgentSuggestions";
 import { QuestionsCard } from "@/components/doctorAi";
 import { Badge, Card, CardSkeleton, EmptyState, ErrorState } from "@/components/ui";
 import type { CareGap } from "@/domain/careGap";
@@ -55,6 +56,8 @@ export default function DoctorOverview() {
           <Stat label="Open care gaps" value={openGaps.length} tone="warning" />
         </div>
       )}
+
+      <AgentSuggestionsCard />
 
       <QuestionsCard />
 

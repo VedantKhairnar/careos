@@ -1,6 +1,6 @@
 import type { Actor } from "@/domain/events";
 import { HttpError } from "@/server/http";
-import { runAgent, type AgentRun } from "./runner";
+import { runAgent, type AgentRun, type TraceStep } from "./runner";
 import { PATIENT_TOOLS } from "./tools";
 
 export const URGENT_MESSAGE =
@@ -35,13 +35,15 @@ export interface PatientChatResult {
   sources: string[];
   askedCareTeam: boolean;
   model: string | null;
+  /** Every model call and tool call behind this answer, so it can be shown to the user. */
+  trace: TraceStep[];
 }
 
 export async function askPatientAgent(actor: Actor, message: string): Promise<PatientChatResult> {
   const text = message.trim();
   if (!text) throw new HttpError(400, "validation_failed", "Please type a question");
   if (text.length > 1000) throw new HttpError(400, "validation_failed", "Please keep your question under 1000 characters");
-  if (isUrgent(text)) return { answer: URGENT_MESSAGE, urgent: true, sources: [], askedCareTeam: false, model: null };
+  if (isUrgent(text)) return { answer: URGENT_MESSAGE, urgent: true, sources: [], askedCareTeam: false, model: null, trace: [{ kind: "tool", name: "urgent-symptom check (no AI used)", ok: true, ms: 0, detail: "Sent straight to your care team" }] };
 
   const run: AgentRun = await runAgent({ name: "patient", system: PATIENT_SYSTEM, tools: PATIENT_TOOLS, maxModelCalls: 4 }, actor, actor.patientId ?? "", text);
   return {
@@ -50,5 +52,6 @@ export async function askPatientAgent(actor: Actor, message: string): Promise<Pa
     sources: [...new Set(run.toolsUsed.filter((t) => t.ok).map((t) => t.name))],
     askedCareTeam: run.toolsUsed.some((t) => t.name === "create_clarification_request" && t.ok),
     model: run.model,
+    trace: run.trace,
   };
 }

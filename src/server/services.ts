@@ -2,6 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { detectGaps, type CareGap } from "@/domain/careGap";
 import type { Actor, CareEvent, EventType } from "@/domain/events";
 import { prescriptionStatus } from "@/domain/status";
+import { AGENT_TRIGGERS, runFulfilmentAgent } from "@/agents/fulfilmentAgent";
 import { HttpError, rejection } from "./http";
 import { nowMs, runtime } from "./runtime";
 
@@ -168,6 +169,12 @@ export async function applyPharmacyEvent(
         },
         { payload: { important: true, notificationId: r.event.eventId, kind: input.type }, simulated: true },
       ),
+    );
+  }
+  if (r.status === "applied" && AGENT_TRIGGERS.has(input.type)) {
+    // Event-driven agent: wakes on its own, in the background. A failure is logged and never blocks the pharmacy event.
+    void runFulfilmentAgent({ workflowId: input.workflowId, patientId: existing[0].patientId, triggerEventId: r.event.eventId, triggerType: input.type }).catch((err) =>
+      console.warn("[fulfilment-agent]", err instanceof Error ? err.message : err),
     );
   }
   return { result: r.status, ...(await prescriptionViewAsSystem(input.workflowId)) };

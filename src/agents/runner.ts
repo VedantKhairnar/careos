@@ -14,8 +14,18 @@ export interface AgentSpec {
   maxModelCalls?: number;
 }
 
+/** One visible step of an agent run: what it did, how long it took, whether it worked. */
+export interface TraceStep {
+  kind: "model" | "tool";
+  name: string;
+  ok: boolean;
+  ms: number;
+  detail?: string;
+}
+
 export interface AgentRun {
   text: string;
+  trace: TraceStep[];
   toolsUsed: { name: string; ok: boolean }[];
   model: string;
   modelCalls: number;
@@ -35,6 +45,7 @@ export async function runAgent(spec: AgentSpec, actor: Actor, patientId: string,
   const contents: Content[] = [{ role: "user", parts: [{ text: userText }] }];
   const decls = spec.tools.map(declOf);
   const toolsUsed: AgentRun["toolsUsed"] = [];
+  const trace: TraceStep[] = [];
   let usedModel = "";
 
   for (let call = 1; call <= maxCalls; call++) {
@@ -48,11 +59,12 @@ export async function runAgent(spec: AgentSpec, actor: Actor, patientId: string,
       throw err;
     }
     usedModel = res.model;
+    trace.push({ kind: "model", name: res.model, ok: true, ms: res.latencyMs, detail: `${res.usage.input} tokens in, ${res.usage.output} out` });
     await store.logAgentExecution({ agent: spec.name, patientId, startedAt, durationMs: res.latencyMs, ok: true, model: res.model, inputTokens: res.usage.input, outputTokens: res.usage.output });
 
     if (res.functionCalls.length === 0) {
       if (!res.text) throw new AiUnavailable("bad_output", "The assistant returned an empty answer.");
-      return { text: res.text, toolsUsed, model: res.model, modelCalls: call };
+      return { text: res.text, trace, toolsUsed, model: res.model, modelCalls: call };
     }
     if (lastChance) throw new AiUnavailable("bad_output", "The assistant could not finish. Please try again.");
 
@@ -86,6 +98,7 @@ export async function runAgent(spec: AgentSpec, actor: Actor, patientId: string,
         }
       }
       toolsUsed.push({ name: fc.name, ok });
+      trace.push({ kind: "tool", name: fc.name, ok, ms: Date.now() - t0, detail: error });
       await store.logAgentExecution({ agent: spec.name, patientId, startedAt: startedTool, durationMs: Date.now() - t0, ok, error, tool: fc.name, model: res.model });
       responses.push({ functionResponse: { name: fc.name, response } });
     }

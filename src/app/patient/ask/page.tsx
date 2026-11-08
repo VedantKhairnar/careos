@@ -2,6 +2,7 @@
 
 import { Send, ShieldAlert, UserRound } from "lucide-react";
 import { useRef, useState } from "react";
+import { AgentTrace } from "@/components/AgentTrace";
 import { RichText } from "@/components/RichText";
 import { Badge, Button, Card, EmptyState, useToast } from "@/components/ui";
 import type { PatientChatResult } from "@/agents/patientAgent";
@@ -12,7 +13,7 @@ import { useApi } from "@/lib/useApi";
 
 type Msg =
   | { role: "user"; text: string }
-  | { role: "assistant"; text: string; sources?: string[]; urgent?: boolean; askedCareTeam?: boolean }
+  | { role: "assistant"; text: string; sources?: string[]; urgent?: boolean; askedCareTeam?: boolean; trace?: PatientChatResult["trace"] }
   | { role: "unavailable"; text: string; original: string };
 
 const SOURCE_LABEL: Record<string, string> = {
@@ -45,7 +46,7 @@ export default function AskPage() {
     scroll();
     try {
       const r = await api<PatientChatResult>("/api/agents/patient/chat", { body: { message: q } });
-      setMsgs((m) => [...m, { role: "assistant", text: r.answer, sources: r.sources, urgent: r.urgent, askedCareTeam: r.askedCareTeam }]);
+      setMsgs((m) => [...m, { role: "assistant", text: r.answer, sources: r.sources, urgent: r.urgent, askedCareTeam: r.askedCareTeam, trace: r.trace }]);
       if (r.askedCareTeam) void questions.reload();
     } catch (e) {
       const aiDown = e instanceof ApiError && e.code.startsWith("ai_");
@@ -108,6 +109,7 @@ export default function AskPage() {
                 {m.role === "assistant" && m.sources && m.sources.length > 0 && (
                   <p className="mt-1 text-xs text-muted">Based on: {m.sources.map((s) => SOURCE_LABEL[s] ?? s).join(", ")}</p>
                 )}
+                {m.role === "assistant" && m.trace && <AgentTrace steps={m.trace} />}
                 {m.role === "assistant" && m.askedCareTeam && <div className="mt-2"><Badge tone="info">Sent to your care team</Badge></div>}
                 {m.role === "unavailable" && (
                   <Button className="mt-2" variant="secondary" onClick={() => sendToTeam(m.original)}>
