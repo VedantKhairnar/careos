@@ -17,9 +17,9 @@ function errText(e: unknown) {
 }
 
 /** Paste visit notes, get a draft that goes into review. The AI cannot approve it and values not in the notes are removed. */
-export function AiDraftPanel({ patientId, onCreated }: { patientId: string; onCreated: () => void }) {
+export function AiDraftPanel({ patientId, onCreated, startOpen = false }: { patientId: string; onCreated: () => void; startOpen?: boolean }) {
   const toast = useToast();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(startOpen);
   const [notes, setNotes] = useState("");
   const [busy, setBusy] = useState(false);
   const [removed, setRemoved] = useState<string[]>([]);

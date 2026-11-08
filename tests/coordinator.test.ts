@@ -18,7 +18,7 @@ const call = (h: AnyHandler, r: Request, id?: string) => h(r, (id ? { params: Pr
 const login = async (body: Record<string, unknown>) => (await call(sessionPost, req("POST", "/api/auth/session", { body }))).headers.get("set-cookie")!.split(";")[0];
 
 const GOOD = { patientMessage: "Your pharmacy reported a delay with your prescription. They did not say when it will be ready.", clinicianSummary: "The pharmacy reported a delay and gave no reason or time.", suggestedNextStep: "Call the pharmacy to ask for a time.", missingInformation: ["Reason", "Ready time"] };
-const BAD = { ...GOOD, patientMessage: "Your prescription will be ready within 97 hours, so don't worry." };
+const BAD = { ...GOOD, patientMessage: "Your prescription will be ready within 7777 hours, so don't worry." };
 
 let wf = "";
 type Call = { name: string; args: Record<string, unknown> };
@@ -128,7 +128,7 @@ describe("care coordinator (event-driven, multi-agent)", () => {
     const s = await first();
     const reviews = s.log.filter((e) => e.agent === "reviewer").map((e) => e.title);
     expect(reviews).toEqual(["Gemini call", "Rejected by the Safety Reviewer", "Gemini call", "Approved by the Safety Reviewer"].filter((t) => reviews.includes(t)));
-    expect(s.log.some((e) => e.title === "Code checks FAILED" && /97/.test(e.detail ?? "") && /reassurance/.test(e.detail ?? ""))).toBe(true);
+    expect(s.log.some((e) => e.title === "Code checks FAILED" && /7777/.test(e.detail ?? "") && /reassurance/.test(e.detail ?? ""))).toBe(true);
     expect(s.safetyReviewRounds).toBe(2);
     expect(s.patientMessage).toBe(GOOD.patientMessage); // the unsafe wording never reaches the clinician
   });

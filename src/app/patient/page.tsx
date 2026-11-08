@@ -4,6 +4,7 @@ import { AlertTriangle, CalendarClock } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { DoseRow } from "@/components/DoseRow";
+import { VisitStatus } from "@/components/VisitStatus";
 import { RxBadge, type RxView } from "@/components/rx";
 import { useMe } from "@/components/session";
 import { Badge, Button, Card, CardSkeleton, EmptyState, ErrorState, SourceDetails } from "@/components/ui";
@@ -62,6 +63,8 @@ export default function PatientHome() {
           </span>
         </Link>
       )}
+
+      <VisitStatus />
 
       <Card title="Your medicines today">
         {meds.loading ? (

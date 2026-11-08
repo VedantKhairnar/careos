@@ -1,18 +1,18 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useState } from "react";
 import { CarePlanForm } from "@/components/CarePlanForm";
 import { AiDraftPanel, AiSummaryCard, QuestionsCard } from "@/components/doctorAi";
 import { PlanReview } from "@/components/PlanReview";
+import { PrescriptionForm } from "@/components/PrescriptionForm";
+import { VisitStatus } from "@/components/VisitStatus";
 import { GAP_LABEL, RxBadge } from "@/components/rx";
 import { RxActions } from "@/components/RxActions";
-import { Badge, Button, Card, CardSkeleton, EmptyState, ErrorState, useToast } from "@/components/ui";
+import { Badge, Card, CardSkeleton, EmptyState, ErrorState } from "@/components/ui";
 import type { CareGap } from "@/domain/careGap";
 import type { CarePlanView } from "@/server/carePlans";
 import type { MedicationView } from "@/server/patientCare";
 import type { PrescriptionSummary } from "@/server/services";
-import { api, ApiError } from "@/lib/api";
 import { formatDate, formatTime } from "@/lib/format";
 import { useApi } from "@/lib/useApi";
 
@@ -54,6 +54,8 @@ export default function PatientDetail() {
         <h1 className="text-2xl font-bold">{s.patient.displayName}</h1>
         <p className="text-sm text-muted">{s.patient.scenario}</p>
       </div>
+
+      <VisitStatus patientId={id} />
 
       <Card title="Care plans">
         {s.plans.length === 0 && <EmptyState title="No care plans yet" />}
@@ -161,60 +163,5 @@ export default function PatientDetail() {
         <p className="mt-3 text-xs text-muted">Dose answers are the patient&apos;s own report. They are never shown as clinically verified.</p>
       </Card>
     </>
-  );
-}
-
-function PrescriptionForm({ patientId, onCreated }: { patientId: string; onCreated: () => void }) {
-  const toast = useToast();
-  const [open, setOpen] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [med, setMed] = useState("");
-  const [instr, setInstr] = useState("");
-
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    setBusy(true);
-    try {
-      await api("/api/prescriptions", { body: { patientId, medicationReference: med, ...(instr.trim() ? { approvedInstructions: instr } : {}) } });
-      toast("Authorized and sent (simulated transmission).");
-      setOpen(false);
-      setMed("");
-      setInstr("");
-      onCreated();
-    } catch (err) {
-      toast(err instanceof ApiError ? err.message : "Could not create the prescription.", "danger");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  if (!open) {
-    return (
-      <Button variant="secondary" onClick={() => setOpen(true)}>
-        New prescription
-      </Button>
-    );
-  }
-  const input = "mt-1 block min-h-11 w-full rounded-xl border border-line bg-surface px-3 text-sm";
-  return (
-    <form onSubmit={submit} className="space-y-3 rounded-xl border border-line p-3">
-      <p className="text-sm text-muted">Authorizing sends a <strong>simulated</strong> transmission. No real e-prescribing happens.</p>
-      <label className="block text-sm font-medium">
-        Medication (fictional)
-        <input required maxLength={200} className={input} value={med} onChange={(e) => setMed(e.target.value)} />
-      </label>
-      <label className="block text-sm font-medium">
-        Approved instructions (optional)
-        <textarea maxLength={2000} rows={2} className={`${input} py-2`} value={instr} onChange={(e) => setInstr(e.target.value)} />
-      </label>
-      <div className="flex gap-2">
-        <Button type="submit" loading={busy}>
-          Authorize prescription
-        </Button>
-        <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
-          Cancel
-        </Button>
-      </div>
-    </form>
   );
 }

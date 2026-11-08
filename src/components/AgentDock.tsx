@@ -4,6 +4,7 @@ import { Bot, ChevronDown, ChevronUp } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import type { LogEntry, RunRecord } from "@/agents/runLog";
+import { inStage } from "@/lib/api";
 import { useApi } from "@/lib/useApi";
 import { LogView } from "./LogView";
 
@@ -15,7 +16,8 @@ export function AgentDock() {
   const path = usePathname();
   const [open, setOpen] = useState(false);
   const [fast, setFast] = useState(false);
-  const runs = useApi<RunRecord[]>("/api/agent-runs", { pollMs: fast ? 1000 : 3000 });
+  const hidden = path.startsWith("/doctor/agents") || path.startsWith("/demo/stage") || inStage(); // those already show the log in full
+  const runs = useApi<RunRecord[]>(hidden ? null : "/api/agent-runs", { pollMs: fast ? 1000 : 3000 });
   const end = useRef<HTMLDivElement>(null);
 
   const running = (runs.data ?? []).some((r) => r.status === "running");
@@ -31,7 +33,7 @@ export function AgentDock() {
     if (open) end.current?.scrollIntoView({ block: "end" });
   }, [open, entries.length]);
 
-  if (runs.error || !runs.data || path.startsWith("/doctor/agents")) return null; // the Agent room already shows it in full
+  if (hidden || runs.error || !runs.data) return null;
 
   return (
     <section aria-label="Live agent log" className="fixed bottom-3 right-3 z-40 w-[min(34rem,calc(100vw-1.5rem))] rounded-2xl border border-line bg-surface shadow-lg">
