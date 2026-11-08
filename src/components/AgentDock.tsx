@@ -3,10 +3,10 @@
 import { Bot, ChevronDown, ChevronUp } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import type { LogEntry, RunRecord } from "@/agents/runLog";
+import type { LogEntry } from "@/agents/runLog";
 import { inStage } from "@/lib/api";
 import { useApi } from "@/lib/useApi";
-import { LogView } from "./LogView";
+import { ActivityList, type Activity } from "./ActivityFeed";
 
 /**
  * A dock that stays on screen in the doctor portal and the pharmacy simulator and shows what the agents are doing,
@@ -17,16 +17,13 @@ export function AgentDock() {
   const [open, setOpen] = useState(false);
   const [fast, setFast] = useState(false);
   const hidden = path.startsWith("/doctor/agents") || path.startsWith("/demo/stage") || inStage(); // those already show the log in full
-  const runs = useApi<RunRecord[]>(hidden ? null : "/api/agent-runs", { pollMs: fast ? 1000 : 3000 });
+  const runs = useApi<Activity>(hidden ? null : "/api/activity", { pollMs: fast ? 1000 : 3000 });
   const end = useRef<HTMLDivElement>(null);
 
-  const running = (runs.data ?? []).some((r) => r.status === "running");
+  const running = runs.data?.running ?? false;
   if (running !== fast) setFast(running); // poll faster while something is running
 
-  const entries: LogEntry[] = (runs.data ?? [])
-    .flatMap((r) => r.entries)
-    .sort((a, b) => a.at.localeCompare(b.at))
-    .slice(-40);
+  const entries: LogEntry[] = (runs.data?.entries ?? []).slice(-60);
   const latest = entries.at(-1);
 
   useEffect(() => {
@@ -44,12 +41,12 @@ export function AgentDock() {
         </span>
         <Bot aria-hidden className="h-4 w-4 shrink-0" />
         <span className="font-semibold">{running ? "Agents working" : "Agents idle"}</span>
-        <span className="min-w-0 flex-1 truncate text-muted">{latest ? `${latest.agent}: ${latest.title}` : "Waiting for an event. Nothing has happened yet."}</span>
+        <span className="min-w-0 flex-1 truncate text-muted">{latest ? `${latest.title}` : "Waiting for an event. Nothing has happened yet."}</span>
         {open ? <ChevronDown aria-hidden className="h-4 w-4 shrink-0" /> : <ChevronUp aria-hidden className="h-4 w-4 shrink-0" />}
       </button>
       {open && (
         <div className="max-h-[55vh] overflow-y-auto border-t border-line p-2">
-          {entries.length === 0 ? <p className="p-2 text-sm text-muted">No agent has run yet. Press Report a delay in the pharmacy tab, or ask the patient assistant something.</p> : <LogView entries={entries} />}
+          <ActivityList entries={entries} empty="Nothing here yet. Press Report a delay in the pharmacy window, or ask the patient assistant something." />
           <div ref={end} />
         </div>
       )}

@@ -2,7 +2,7 @@
  * The live log of what the agents are doing. Kept in memory per server process (it is a window onto what is
  * happening now); the finished log of each run is also saved inside the draft it produced, so it survives restarts.
  */
-export type LogKind = "start" | "think" | "tool" | "handoff" | "review" | "blocked" | "decision" | "gate" | "human" | "error";
+export type LogKind = "start" | "think" | "tool" | "handoff" | "review" | "blocked" | "decision" | "gate" | "human" | "system" | "error";
 
 export interface LogEntry {
   n: number;

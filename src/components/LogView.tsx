@@ -1,4 +1,5 @@
 import type { LogEntry } from "@/agents/runLog";
+import { BRAND } from "@/lib/brand";
 
 const AGENT: Record<string, { label: string; cls: string }> = {
   coordinator: { label: "Coordinator", cls: "bg-info-bg text-info" },
@@ -9,15 +10,19 @@ const AGENT: Record<string, { label: string; cls: string }> = {
   explainer: { label: "Visit explainer", cls: "bg-info-bg text-info" },
   "doctor-agent": { label: "Doctor agent", cls: "bg-info-bg text-info" },
   clinician: { label: "Clinician", cls: "bg-success-bg text-success" },
+  doctor: { label: "Doctor", cls: "bg-success-bg text-success" },
+  patient: { label: "Patient", cls: "bg-success-bg text-success" },
+  pharmacy: { label: "Pharmacy (simulated)", cls: "bg-warning-bg text-warning" },
+  orchestrator: { label: `${BRAND.name} (code)`, cls: "bg-surface-2 text-ink" },
 };
-const KIND: Record<string, string> = { start: "WAKE", think: "THINK", tool: "TOOL", handoff: "HANDOFF", review: "REVIEW", blocked: "BLOCKED", decision: "DECIDE", gate: "WAIT", human: "HUMAN", error: "ERROR" };
+const KIND: Record<string, string> = { start: "WAKE", think: "THINK", tool: "TOOL", handoff: "HANDOFF", review: "REVIEW", blocked: "BLOCKED", decision: "DECIDE", gate: "WAIT", human: "HUMAN", system: "SYSTEM", error: "ERROR" };
 
 const t = (iso: string) => new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 
 /** A real, timestamped log of what the agents did. Every line is something that actually happened. */
 export function LogView({ entries }: { entries: LogEntry[] }) {
   return (
-    <ol className="space-y-1.5 font-mono text-xs" aria-label="Agent log">
+    <ol className="space-y-1.5 font-mono text-xs" aria-label="Activity log">
       {entries.map((e, i) => {
         const a = AGENT[e.agent] ?? { label: e.agent, cls: "bg-surface-2 text-ink" };
         const bad = e.ok === false || e.kind === "blocked" || e.kind === "error";

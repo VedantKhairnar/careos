@@ -3,8 +3,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { Bot, ChevronDown, ChevronUp } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import type { LogEntry, RunRecord } from "@/agents/runLog";
-import { LogView } from "@/components/LogView";
+import type { LogEntry } from "@/agents/runLog";
+import { ActivityList, type Activity } from "@/components/ActivityFeed";
 import { Button, useToast } from "@/components/ui";
 import { api, ApiError, FRAME_PREFIX, setActingAs } from "@/lib/api";
 import { useApi } from "@/lib/useApi";
@@ -67,9 +67,9 @@ export default function Stage() {
     },
   });
 
-  const runs = useApi<RunRecord[]>(ready.data ? "/api/agent-runs" : null, { pollMs: 1000 });
-  const entries: LogEntry[] = (runs.data ?? []).flatMap((r) => r.entries).sort((a, b) => a.at.localeCompare(b.at)).slice(-80);
-  const working = (runs.data ?? []).some((r) => r.status === "running");
+  const runs = useApi<Activity>(ready.data ? "/api/activity" : null, { pollMs: 1000 });
+  const entries: LogEntry[] = (runs.data?.entries ?? []).slice(-100);
+  const working = runs.data?.running ?? false;
   const end = useRef<HTMLDivElement>(null);
   useEffect(() => {
     end.current?.scrollIntoView({ block: "end" });
@@ -153,7 +153,7 @@ export default function Stage() {
           ))}
           <section aria-label="Live agent log" className="flex h-[75vh] min-h-0 flex-col overflow-hidden rounded-xl border border-line bg-surface lg:h-auto">
             <p className="flex items-center gap-2 border-b border-line bg-surface-2 px-3 py-1.5 text-sm font-semibold">
-              <Bot aria-hidden className="h-4 w-4" /> Live agent log
+              <Bot aria-hidden className="h-4 w-4" /> Live activity
               <span className="relative ml-1 flex h-2.5 w-2.5" aria-hidden>
                 {working && <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-60" />}
                 <span className={`relative inline-flex h-2.5 w-2.5 rounded-full ${working ? "bg-success" : "bg-muted"}`} />
@@ -161,7 +161,7 @@ export default function Stage() {
               <span className="font-normal text-muted">{working ? "agents working" : "idle"}</span>
             </p>
             <div className="min-h-0 flex-1 overflow-y-auto p-2">
-              {entries.length === 0 ? <p className="p-2 text-sm text-muted">Nothing yet. Agents wake when something happens: a plan draft, a patient question, or a pharmacy delay.</p> : <LogView entries={entries} />}
+              <ActivityList entries={entries} empty="Nothing yet. Everything the doctor, patient, pharmacy, the system and the agents do shows up here." />
               <div ref={end} />
             </div>
           </section>
