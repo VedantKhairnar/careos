@@ -89,7 +89,7 @@ export default function PatientHome() {
         ))}
       </Card>
 
-      <Card title="Your prescriptions" action={<Link href="/patient/timeline" className="text-sm font-semibold text-accent underline">See full history</Link>}>
+      <Card title="Your prescriptions" action={<Link href="/patient/timeline" className="inline-flex min-h-11 items-center text-sm font-semibold text-accent underline">See full history</Link>}>
         {rx.loading ? (
           <CardSkeleton rows={2} />
         ) : rx.error ? (

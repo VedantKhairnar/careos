@@ -298,3 +298,33 @@ describe("model output cleanup", () => {
     expect(dropEmpty({ a: "x", endDate: "", notes: null, meds: [{ name: "M", endDate: "", times: ["09:00"] }] })).toEqual({ a: "x", meds: [{ name: "M", times: ["09:00"] }] });
   });
 });
+
+describe("treatment-change questions are forwarded by code, not left to the model", () => {
+  it("forwards 'is it okay to stop my antibiotic early?' to the care team without calling the model", async () => {
+    const { model, requests } = scripted([{ text: "should not be used" }]);
+    setModelForTests(model);
+    const res = await chat(alex, "Is it okay to stop my antibiotic early?");
+    const body = (await res.json()).data;
+    expect(res.status).toBe(200);
+    expect(requests).toHaveLength(0);
+    expect(body).toMatchObject({ askedCareTeam: true, urgent: false, model: null });
+    expect(body.answer).toMatch(/only your care team can/i);
+    const qs = (await (await call(questionsGet, req("GET", "/api/questions", { cookie: clin }))).json()).data as { question: string; status: string; askedVia: string }[];
+    expect(qs.some((q) => /stop my antibiotic/i.test(q.question) && q.status === "open" && q.askedVia === "assistant")).toBe(true);
+  });
+
+  it("still answers plan questions ('when do I stop...', 'what medicines...') with the assistant", async () => {
+    for (const q of ["When do I stop my antibiotic?", "What medicines should I take today?", "How long do I take the dose for?"]) {
+      const { model, requests } = scripted([{ text: "From your plan." }]);
+      setModelForTests(model);
+      await chat(alex, q);
+      expect(requests.length, q).toBeGreaterThan(0);
+    }
+  });
+
+  it("catches common ways of asking to change a treatment", async () => {
+    const { isTreatmentChange } = await import("@/agents/patientAgent");
+    for (const q of ["Can I skip tonight's dose?", "Should I double my pills if I missed one?", "Is it safe to take another tablet?", "I want to stop the medicine", "Is it ok to drink alcohol with my antibiotic? it's fine to mix?"]) expect(isTreatmentChange(q), q).toBe(true);
+    for (const q of ["What is the status of my prescription?", "When is my next follow-up?", "What does the plan say about the dressing?"]) expect(isTreatmentChange(q), q).toBe(false);
+  });
+});

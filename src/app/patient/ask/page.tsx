@@ -24,6 +24,7 @@ const SOURCE_LABEL: Record<string, string> = {
   get_care_timeline: "your care timeline",
   create_clarification_request: "a question sent to your care team",
   "urgent-symptom check (no AI used)": "a check for urgent symptoms (no AI used)",
+  "treatment-change check (no AI used)": "a check on questions about changing medicines (no AI used)",
 };
 
 const STARTERS = ["What medicines should I take today?", "What is the status of my prescription?", "When is my next follow-up?"];

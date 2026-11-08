@@ -1,9 +1,9 @@
 "use client";
 
-import { Clock, LogOut } from "lucide-react";
+import { Clock } from "lucide-react";
 import { useState } from "react";
 import { RxBadge } from "@/components/rx";
-import { SessionGate, useSignOut } from "@/components/session";
+import { SessionGate } from "@/components/session";
 import { Badge, Button, Card, CardSkeleton, EmptyState, ErrorState, useToast } from "@/components/ui";
 import { PRESCRIPTION_TRANSITIONS, type PrescriptionState } from "@/domain/prescription";
 import { api, ApiError } from "@/lib/api";
@@ -46,7 +46,6 @@ export default function PharmacySimulator() {
 
 function Console() {
   const toast = useToast();
-  const signOut = useSignOut();
   const wf = useApi<{ workflows: Workflow[] }>("/api/demo/pharmacy/workflows", { pollMs: 3000 });
   const clock = useApi<{ offsetMinutes: number }>("/api/demo/clock", { pollMs: 3000 });
   const [busy, setBusy] = useState<string | null>(null);
@@ -107,9 +106,6 @@ function Console() {
           <h1 className="text-2xl font-bold">Pharmacy simulator</h1>
           <p className="text-sm text-muted">Demo operator console. Every event sent from here is recorded as simulated and labelled that way in both portals.</p>
         </div>
-        <button onClick={signOut} className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-xl px-3 text-sm hover:bg-surface-2">
-          <LogOut aria-hidden className="h-4 w-4" /> Switch role
-        </button>
       </header>
 
       <Card title="Demo controls" action={<Badge tone="info">Demo only</Badge>}>

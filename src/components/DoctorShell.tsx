@@ -1,11 +1,11 @@
 "use client";
 
-import { Activity, AlertTriangle, BarChart3, ClipboardList, LayoutDashboard, LogOut, Users } from "lucide-react";
+import { Activity, AlertTriangle, BarChart3, ClipboardList, LayoutDashboard, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { AgentDock } from "@/components/AgentDock";
-import { SessionGate, useMe, useSignOut } from "@/components/session";
+import { SessionGate, useMe } from "@/components/session";
 import { BRAND } from "@/lib/brand";
 
 const NAV = [
@@ -28,7 +28,6 @@ export function DoctorShell({ children }: { children: ReactNode }) {
 function Shell({ children }: { children: ReactNode }) {
   const me = useMe();
   const path = usePathname();
-  const signOut = useSignOut();
   const active = (href: string) => (href === "/doctor" ? path === href : path.startsWith(href));
   const link = (n: (typeof NAV)[number], extra = "") => (
     <Link
@@ -52,9 +51,6 @@ function Shell({ children }: { children: ReactNode }) {
         </nav>
         <div className="mt-auto space-y-2 pt-6 text-sm">
           <p className="font-medium">{me.displayName ?? "Clinician"}</p>
-          <button onClick={signOut} className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 hover:bg-surface-2">
-            <LogOut aria-hidden className="h-4 w-4" /> Switch role
-          </button>
         </div>
       </aside>
 
@@ -62,9 +58,6 @@ function Shell({ children }: { children: ReactNode }) {
         <header className="sticky top-0 z-30 border-b border-line bg-bg/95 px-4 py-2 backdrop-blur md:hidden">
           <div className="flex items-center justify-between">
             <p className="font-bold text-accent">{BRAND.name}</p>
-            <button onClick={signOut} className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm hover:bg-surface-2">
-              <LogOut aria-hidden className="h-4 w-4" /> Switch role
-            </button>
           </div>
           <nav aria-label="Primary" className="-mx-1 mt-1 flex gap-1 overflow-x-auto pb-1">
             {NAV.map((n) => link(n, "shrink-0"))}

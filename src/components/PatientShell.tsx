@@ -1,10 +1,10 @@
 "use client";
 
-import { Bell, ClipboardList, History, Home, LogOut, MessageCircle, Pill, Type } from "lucide-react";
+import { Bell, ClipboardList, History, Home, MessageCircle, Pill, Type } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
-import { SessionGate, useLargeText, useMe, useSignOut } from "@/components/session";
+import { SessionGate, useLargeText, useMe } from "@/components/session";
 import { BRAND } from "@/lib/brand";
 import { useApi } from "@/lib/useApi";
 
@@ -28,7 +28,6 @@ export function PatientShell({ children }: { children: ReactNode }) {
 function Shell({ children }: { children: ReactNode }) {
   const me = useMe();
   const path = usePathname();
-  const signOut = useSignOut();
   const text = useLargeText();
   const { data } = useApi<{ unread: number }>("/api/notifications", { pollMs: 10000 });
   const unread = data?.unread ?? 0;
@@ -50,11 +49,6 @@ function Shell({ children }: { children: ReactNode }) {
             >
               <Type aria-hidden className="h-4 w-4" />
               {text.on ? "Normal text" : "Larger text"}
-            </button>
-            <button onClick={signOut} className="inline-flex min-h-11 items-center gap-1.5 rounded-xl px-3 text-sm font-medium hover:bg-surface-2">
-              <LogOut aria-hidden className="h-4 w-4" />
-              <span className="hidden sm:inline">Switch role</span>
-              <span className="sr-only sm:hidden">Switch role</span>
             </button>
           </div>
         </div>

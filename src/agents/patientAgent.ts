@@ -1,5 +1,6 @@
 import type { Actor } from "@/domain/events";
 import { HttpError } from "@/server/http";
+import { askQuestion } from "@/server/questions";
 import { loggedRun } from "./loggedRun";
 import { runAgent, type AgentRun, type TraceStep } from "./runner";
 import { logStep, startRun, endRun } from "./runLog";
@@ -15,6 +16,18 @@ export const URGENT_MESSAGE =
 const URGENT = /\b(chest pain|can'?t breathe|cannot breathe|trouble breathing|difficulty breathing|short(ness)? of breath|severe bleeding|bleeding (a lot|heavily|won'?t stop)|unconscious|passed out|fainted|stroke|seizure|overdos|suicid|kill myself|want to die|allergic reaction|swelling (of|in) (my )?(face|throat|tongue)|emergency)\b/i;
 
 export const isUrgent = (text: string) => URGENT.test(text);
+
+/**
+ * Questions about CHANGING a treatment (stopping, skipping, doubling, mixing) are for a clinician, whatever the model would do.
+ * Detected in code so it does not depend on which model answered. Questions that ask "when / what / how long" are plan questions
+ * and still go to the assistant. Over-inclusive on purpose: a needless forward costs a clinician a minute; a wrong answer costs more.
+ */
+const MED = "(?:medicine|medicines|medication|medications|antibiotic|antibiotics|pill|pills|tablet|tablets|capsule|capsules|dose|doses|painkiller|painkillers|prescription)";
+const CHANGE = new RegExp(`\\b(?:stop|skip|quit|double|increase|decrease|reduce|cut)\\b.{0,40}\\b${MED}\\b|\\b(?:safe|ok|okay|fine|alright)\\s+to\\s+(?:stop|skip|take|mix|drink|double|combine)\\b|\\b(?:more|less|extra|another)\\b.{0,15}\\b${MED}\\b`, "i");
+export const isTreatmentChange = (text: string) => !/^\s*(?:when|what|which|how long|until when)\b/i.test(text) && CHANGE.test(text);
+
+export const FORWARDED_MESSAGE =
+  "I can't answer questions about stopping, skipping or changing a medicine. Only your care team can. I have sent your question to them, and they will answer it themselves. If it is urgent, contact them directly or call your local emergency number.";
 
 export const PATIENT_SYSTEM = `You are the patient's assistant inside CareOS, a care-coordination app. You help one patient understand and follow their own clinician-approved care plan.
 
@@ -52,6 +65,16 @@ export async function askPatientAgent(actor: Actor, message: string): Promise<Pa
     logStep(id, { agent: "patient-assistant", kind: "start", title: `Patient asked: "${text.slice(0, 80)}"` });
     logStep(id, { agent: "safety-check", kind: "blocked", title: "Urgent-symptom check (code, no AI)", detail: "Matched an urgent phrase. The model was not called; the patient was sent straight to their care team.", ok: false });
     endRun(id, "done");
+  }
+  if (!isUrgent(text) && isTreatmentChange(text)) {
+    const id = `forward-${Date.now()}`;
+    startRun({ runId: id, trigger: "patient.question", workflowId: "-", patientId: pid });
+    logStep(id, { agent: "patient-assistant", kind: "start", title: `Patient asked: "${text.slice(0, 80)}"` });
+    logStep(id, { agent: "safety-check", kind: "blocked", title: "Treatment-change check (code, no AI)", detail: "The question is about stopping, skipping or changing a medicine. Only a clinician can answer it, so it was sent to the care team without asking the model.", ok: false });
+    await askQuestion(actor, text, "assistant");
+    logStep(id, { agent: "patient-assistant", kind: "decision", title: "Sent to the care team", detail: "A clinician will answer it themselves.", ok: true });
+    endRun(id, "done");
+    return { answer: FORWARDED_MESSAGE, urgent: false, sources: ["create_clarification_request"], askedCareTeam: true, model: null, trace: [{ kind: "tool", name: "treatment-change check (no AI used)", ok: true, ms: 0 }, { kind: "tool", name: "create_clarification_request", ok: true, ms: 0 }] };
   }
   if (isUrgent(text)) return { answer: URGENT_MESSAGE, urgent: true, sources: [], askedCareTeam: false, model: null, trace: [{ kind: "tool", name: "urgent-symptom check (no AI used)", ok: true, ms: 0, detail: "Sent straight to your care team" }] };
 
