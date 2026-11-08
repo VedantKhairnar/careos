@@ -93,13 +93,10 @@ try {
     await finish(s, "demo-cycle", { width: 960, fps: 6 });
   }
 
-  /* 2. The plain-language visit (one model call), then home readings (no model) */
+  /* 2. Home readings (no model), then the plain-language visit (one model call) */
   {
     const s = await stage("readings");
-    await s.patient.getByRole("button", { name: "Explain my visit" }).click();
-    await s.patient.getByText("What to do").waitFor({ timeout: 90_000 });
-    await pause(s.page, 3000);
-    await shot(s.page, "stage-explainer");
+    await pause(s.page, 1500);
     await s.win("Patient window").getByRole("button", { name: "Readings", exact: true }).click();
     await s.patient.getByRole("heading", { name: "Home readings" }).waitFor({ timeout: 60_000 });
     await pause(s.page, 1500);
@@ -120,6 +117,11 @@ try {
     await s.doctor.getByText("Review a home reading outside your range").waitFor({ timeout: 30_000 });
     await pause(s.page, 3000);
     await shot(s.page, "stage-reading-flagged");
+    await s.win("Patient window").getByRole("button", { name: "Visit", exact: true }).click();
+    await s.patient.getByRole("button", { name: "Explain my visit" }).click();
+    await s.patient.getByText("What to do").waitFor({ timeout: 90_000 });
+    await pause(s.page, 3000);
+    await shot(s.page, "stage-explainer");
     await finish(s, "readings", { width: 860, fps: 7 });
   }
 

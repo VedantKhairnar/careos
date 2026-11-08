@@ -55,3 +55,7 @@ next-env.d.ts
 # Playwright output
 /test-results/
 /playwright-report/
+
+# Submission materials stay on this machine only (never committed)
+/DEVPOST.md
+/submission/
