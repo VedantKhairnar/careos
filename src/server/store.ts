@@ -19,6 +19,7 @@ export interface EventStore {
   append(event: CareEvent): Promise<boolean>;
   listByWorkflow(workflowId: string): Promise<CareEvent[]>;
   listByPatient(patientId: string): Promise<CareEvent[]>;
+  listAll(): Promise<CareEvent[]>;
   logAgentExecution(e: AgentExecution): Promise<void>;
   listAgentExecutions(): Promise<AgentExecution[]>;
 }
@@ -42,6 +43,9 @@ export class InMemoryEventStore implements EventStore {
   }
   async listByPatient(patientId: string) {
     return this.events.filter((e) => e.patientId === patientId);
+  }
+  async listAll() {
+    return [...this.events];
   }
   async logAgentExecution(e: AgentExecution) {
     this.agentLog.push(e);

@@ -14,10 +14,12 @@ export class Forbidden extends Error {
   }
 }
 
+export type RejectCode = "invalid_event" | "forbidden" | "invalid_transition";
+
 export type HandleResult =
   | { status: "applied"; event: CareEvent }
   | { status: "duplicate" }
-  | { status: "rejected"; reason: string };
+  | { status: "rejected"; code: RejectCode; reason: string };
 
 /** Event types that carry no state transition but still have per-role rules. */
 const OTHER_EVENT_ACTORS: Partial<Record<EventType, ActorRole[]>> = {
@@ -41,25 +43,25 @@ export class Orchestrator {
   async handle(actor: Actor, raw: unknown): Promise<HandleResult> {
     const parsed = CareEventSchema.safeParse(raw);
     if (!parsed.success) {
-      return { status: "rejected", reason: `Invalid event: ${parsed.error.issues[0]?.message ?? "schema error"}` };
+      return { status: "rejected", code: "invalid_event", reason: `Invalid event: ${parsed.error.issues[0]?.message ?? "schema error"}` };
     }
     const event = parsed.data;
 
     // The claimed identity must match the authenticated actor. No spoofing.
     if (event.actorId !== actor.id || event.actorRole !== actor.role) {
-      return { status: "rejected", reason: "Event actor does not match the authenticated actor" };
+      return { status: "rejected", code: "forbidden", reason: "Event actor does not match the authenticated actor" };
     }
     // Patient-side actors may only touch their own record.
     if (PATIENT_SIDE.includes(actor.role) && actor.patientId !== event.patientId) {
-      return { status: "rejected", reason: "Not authorized for this patient" };
+      return { status: "rejected", code: "forbidden", reason: "Not authorized for this patient" };
     }
     // Patient-reported information must stay labelled as such.
     if (PATIENT_SIDE.includes(actor.role) && event.verification !== "patient_reported") {
-      return { status: "rejected", reason: "Patient-reported information cannot be marked as verified" };
+      return { status: "rejected", code: "invalid_event", reason: "Patient-reported information cannot be marked as verified" };
     }
     // Simulator events must always be flagged as simulated.
     if (actor.role === "pharmacy_sim" && !event.simulated) {
-      return { status: "rejected", reason: "Pharmacy simulator events must be flagged as simulated" };
+      return { status: "rejected", code: "invalid_event", reason: "Pharmacy simulator events must be flagged as simulated" };
     }
 
     // Idempotency: a repeated key never produces a second transition.
@@ -69,7 +71,7 @@ export class Orchestrator {
 
     if (PRESCRIPTION_TRANSITIONS[event.type]) {
       const r = applyPrescriptionEvent(foldPrescriptionState(history), event.type, event.actorRole);
-      if (!r.ok) return { status: "rejected", reason: r.reason };
+      if (!r.ok) return { status: "rejected", code: r.reason.includes(" may not ") ? "forbidden" : "invalid_transition", reason: r.reason };
     } else if (CARE_PLAN_TRANSITIONS[event.type]) {
       let plan: CarePlanState = "DRAFT";
       for (const e of history) {
@@ -77,12 +79,12 @@ export class Orchestrator {
         if (step.ok) plan = step.next;
       }
       const r = applyCarePlanEvent(plan, event.type, event.actorRole);
-      if (!r.ok) return { status: "rejected", reason: r.reason };
+      if (!r.ok) return { status: "rejected", code: r.reason.includes(" may not ") ? "forbidden" : "invalid_transition", reason: r.reason };
     } else {
       const allowed = OTHER_EVENT_ACTORS[event.type];
-      if (!allowed) return { status: "rejected", reason: `Unknown event type ${event.type}` };
+      if (!allowed) return { status: "rejected", code: "invalid_event", reason: `Unknown event type ${event.type}` };
       if (!allowed.includes(event.actorRole)) {
-        return { status: "rejected", reason: `${event.actorRole} may not perform ${event.type}` };
+        return { status: "rejected", code: "forbidden", reason: `${event.actorRole} may not perform ${event.type}` };
       }
     }
 
