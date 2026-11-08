@@ -11,6 +11,7 @@ import { AiUnavailable, getModel } from "./model";
 import { runAgent } from "./runner";
 import { endRun, listRuns, logStep, startRun } from "./runLog";
 import type { ToolDef } from "./tools";
+import { BRAND } from "@/lib/brand";
 
 /** Role "agent": no clinical transition accepts it. It can only append drafts for a human to review. */
 export const COORDINATOR: Actor = { id: "agent:coordinator", role: "agent" };
@@ -22,7 +23,7 @@ const Why = z.string().min(3).max(240).describe("One short sentence: what you wa
 
 /* ---------------------------------- the three agents' instructions ---------------------------------- */
 
-export const COORDINATOR_SYSTEM = `You are the Care Coordinator, an autonomous agent inside CareOS. A pharmacy update just arrived that may need a human's attention. You work out how urgent it is and prepare a SAFE, VERIFIED proposal for the clinician. You cannot message the patient and you cannot change any record. A clinician decides.
+export const COORDINATOR_SYSTEM = `You are the Care Coordinator, an autonomous agent inside ${BRAND.name}. A pharmacy update just arrived that may need a human's attention. You work out how urgent it is and prepare a SAFE, VERIFIED proposal for the clinician. You cannot message the patient and you cannot change any record. A clinician decides.
 
 HOW YOU WORK
 1. Investigate with your tools. Independent tools can be called together in one step. Every tool call needs a short "why".

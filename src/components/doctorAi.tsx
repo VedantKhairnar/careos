@@ -124,7 +124,7 @@ export function QuestionsCard({ patientId, prefillAnswer = "" }: { patientId?: s
   async function answer(id: string) {
     setBusy(id);
     try {
-      await api(`/api/questions/${id}/answer`, { body: { answer: draft[id] ?? "" } });
+      await api(`/api/questions/${id}/answer`, { body: { answer: draft[id] ?? prefillAnswer } });
       toast("Answer sent to the patient.");
       setDraft((d) => ({ ...d, [id]: "" }));
       await q.reload();

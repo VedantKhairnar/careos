@@ -6,6 +6,7 @@ import { api, ApiError } from "@/lib/api";
 import { formatDateTime } from "@/lib/format";
 import { useApi } from "@/lib/useApi";
 import { Badge, Button, Card, CardSkeleton, EmptyState, ErrorState, useToast } from "./ui";
+import { BRAND } from "@/lib/brand";
 
 const LABEL: Record<Metric, string> = { heart_rate: "Resting heart rate", blood_pressure: "Blood pressure", pain_score: "Pain score (0 to 10)", temperature: "Temperature" };
 /** Pre-filled so nothing has to be typed during a demo. The patient can change every value. */
@@ -156,7 +157,7 @@ export function ReadingsPanel({ patientId }: { patientId?: string }) {
           ))}
         </ul>
       )}
-      <p className="mt-3 text-xs text-muted">These are the patient&apos;s own measurements. They are not verified, and CareOS does not diagnose or say whether a value is serious.</p>
+      <p className="mt-3 text-xs text-muted">These are the patient&apos;s own measurements. They are not verified, and {BRAND.name} does not diagnose or say whether a value is serious.</p>
     </Card>
   );
 }

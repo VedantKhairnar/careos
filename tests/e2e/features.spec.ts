@@ -51,6 +51,16 @@ test("home readings and the plain-language visit, from the Demo stage", async ({
     await shot(page, "31-stage-reading-flagged");
   });
 
+  await test.step("a question the assistant forwarded is answered by the doctor with the pre-filled reply, and the patient sees it", async () => {
+    await win("Patient window").getByRole("button", { name: "Ask", exact: true }).click();
+    await patient.getByLabel("Your question").fill("Is it okay to stop my antibiotic early?");
+    await patient.getByRole("button", { name: "Send", exact: true }).click();
+    await expect(patient.getByText("Sent to your care team").first()).toBeVisible({ timeout: 20_000 });
+    await win("Doctor window").getByRole("button", { name: "Case board" }).click();
+    await doctor.getByRole("button", { name: "Send answer" }).click(); // the reply box is pre-filled; sending it must work
+    await expect(doctor.getByText("Answer sent to the patient.")).toBeVisible({ timeout: 20_000 });
+  });
+
   writeReport("features");
   expect(problems, problems.join("\n")).toEqual([]);
 });

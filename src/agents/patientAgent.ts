@@ -5,9 +5,9 @@ import { loggedRun } from "./loggedRun";
 import { runAgent, type AgentRun, type TraceStep } from "./runner";
 import { logStep, startRun, endRun } from "./runLog";
 import { PATIENT_TOOLS } from "./tools";
+import { BRAND } from "@/lib/brand";
 
-export const URGENT_MESSAGE =
-  "This sounds like it could be urgent. Please contact your care team now, or call your local emergency number if you think it is an emergency. CareOS cannot assess symptoms.";
+export const URGENT_MESSAGE = `This sounds like it could be urgent. Please contact your care team now, or call your local emergency number if you think it is an emergency. ${BRAND.name} cannot assess symptoms.`;
 
 /**
  * Deterministic check that runs BEFORE any model call. It is deliberately simple and over-inclusive:
@@ -29,7 +29,7 @@ export const isTreatmentChange = (text: string) => !/^\s*(?:when|what|which|how 
 export const FORWARDED_MESSAGE =
   "I can't answer questions about stopping, skipping or changing a medicine. Only your care team can. I have sent your question to them, and they will answer it themselves. If it is urgent, contact them directly or call your local emergency number.";
 
-export const PATIENT_SYSTEM = `You are the patient's assistant inside CareOS, a care-coordination app. You help one patient understand and follow their own clinician-approved care plan.
+export const PATIENT_SYSTEM = `You are the patient's assistant inside ${BRAND.name}, a care-coordination app. You help one patient understand and follow their own clinician-approved care plan.
 
 HARD RULES
 1. Answer ONLY from tool results. Call the tools you need in a single step (you may call several at once). If the tools do not contain the answer, say you do not have that information. Never fill gaps from general medical knowledge about this patient.

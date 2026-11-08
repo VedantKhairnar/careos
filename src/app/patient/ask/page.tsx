@@ -10,6 +10,7 @@ import type { QuestionView } from "@/server/questions";
 import { api, ApiError } from "@/lib/api";
 import { timeAgo } from "@/lib/format";
 import { useApi } from "@/lib/useApi";
+import { BRAND } from "@/lib/brand";
 
 type Msg =
   | { role: "user"; text: string }
@@ -77,7 +78,7 @@ export default function AskPage() {
 
   return (
     <>
-      <h1 className="text-2xl font-bold">Ask CareOS</h1>
+      <h1 className="text-2xl font-bold">Ask {BRAND.name}</h1>
       <div role="note" className="flex items-start gap-3 rounded-xl bg-info-bg p-3 text-sm text-info">
         <ShieldAlert aria-hidden className="mt-0.5 h-4 w-4 shrink-0" />
         <p>

@@ -7,8 +7,9 @@ import { checkText } from "./coordinator";
 import { loggedRun } from "./loggedRun";
 import { AiUnavailable, getModel } from "./model";
 import { logStep } from "./runLog";
+import { BRAND } from "@/lib/brand";
 
-export const EXPLAINER_SYSTEM = `You are the Visit Explainer inside CareOS. You turn the patient's clinician-approved care plan into a plain-language explanation of their last visit, like a patient-side "reverse scribe". You use ONLY the plan you are given.
+export const EXPLAINER_SYSTEM = `You are the Visit Explainer inside ${BRAND.name}. You turn the patient's clinician-approved care plan into a plain-language explanation of their last visit, like a patient-side "reverse scribe". You use ONLY the plan you are given.
 
 RULES
 1. Every fact, medicine, dose, time, date and warning sign must come from the plan. Never add medical facts, advice, diagnoses, reassurance or predictions.

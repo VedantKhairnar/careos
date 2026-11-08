@@ -5,6 +5,7 @@ import { Badge, Card, CardSkeleton, EmptyState, ErrorState, SourceDetails } from
 import type { CarePlanView } from "@/server/carePlans";
 import { formatDate } from "@/lib/format";
 import { useApi } from "@/lib/useApi";
+import { BRAND } from "@/lib/brand";
 
 export default function PlanPage() {
   const { data, loading, error, reload } = useApi<CarePlanView[]>("/api/care-plans");
@@ -69,7 +70,7 @@ export default function PlanPage() {
       ))}
 
       <p className="rounded-xl bg-surface-2 p-3 text-sm">
-        <strong>In an emergency, call your local emergency number.</strong> CareOS does not assess symptoms and cannot replace medical care.
+        <strong>In an emergency, call your local emergency number.</strong> {BRAND.name} does not assess symptoms and cannot replace medical care.
       </p>
     </>
   );

@@ -8,6 +8,7 @@ import { LogView } from "@/components/LogView";
 import { Button, useToast } from "@/components/ui";
 import { api, ApiError, FRAME_PREFIX, setActingAs } from "@/lib/api";
 import { useApi } from "@/lib/useApi";
+import { BRAND } from "@/lib/brand";
 
 /** Each window is rendered as a phone-sized screen, scaled down a little so four fit side by side on a laptop. */
 const SCALE = 0.85;
@@ -94,7 +95,7 @@ export default function Stage() {
     <div className="flex h-screen flex-col bg-bg">
       <header className="shrink-0 border-b border-line bg-surface px-3 py-1.5">
         <div className="flex flex-wrap items-center gap-2">
-          <p className="font-bold text-accent">CareOS · Demo stage</p>
+          <p className="font-bold text-accent">{BRAND.name} · Demo stage</p>
           <Button variant="danger" loading={busy} onClick={startAfresh}>
             Start afresh
           </Button>

@@ -1,3 +1,4 @@
+import { BRAND } from "../../src/lib/brand";
 import { expect, test } from "@playwright/test";
 import { a11y, checkA11y, checkOverflow, problems, shot, signIn, watch, writeReport } from "./helpers";
 
@@ -15,7 +16,7 @@ test.describe("phone: the patient portal", () => {
       ["/patient/plan", /My care plan/],
       ["/patient/medications", /Medications/],
       ["/patient/timeline", /Care timeline/],
-      ["/patient/ask", /Ask CareOS/],
+      ["/patient/ask", new RegExp(`Ask ${BRAND.name}`)],
       ["/patient/notifications", /Updates/],
     ];
     for (const [url, heading] of pages) {

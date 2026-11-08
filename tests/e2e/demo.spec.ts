@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { BRAND } from "../../src/lib/brand";
 import { a11y, checkA11y, checkOverflow, problems, shot, signIn, watch, writeReport } from "./helpers";
 
 /**
@@ -152,7 +153,7 @@ test("live demo across three tabs in one browser", async ({ context }) => {
     // The patient must never be shown an internal code or field name.
     await expect(alex.locator("body")).not.toContainText(/needs_clarification|scheduleConfirmed|stillNeededFromCareTeam|get_[a-z_]+_schedule/);
     await send("I have chest pain");
-    await expect(alex.getByText(/CareOS cannot assess symptoms/)).toBeVisible({ timeout: 20_000 });
+    await expect(alex.getByText(new RegExp(`${BRAND.name} cannot assess symptoms`))).toBeVisible({ timeout: 20_000 });
     await send("Is it okay to stop my antibiotic early?");
     await expect(alex.getByText("Sent to your care team").first()).toBeVisible({ timeout: 60_000 });
     await shot(alex, "07-alex-ask");
