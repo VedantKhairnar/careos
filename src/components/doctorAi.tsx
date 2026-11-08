@@ -17,10 +17,10 @@ function errText(e: unknown) {
 }
 
 /** Paste visit notes, get a draft that goes into review. The AI cannot approve it and values not in the notes are removed. */
-export function AiDraftPanel({ patientId, onCreated, startOpen = false }: { patientId: string; onCreated: () => void; startOpen?: boolean }) {
+export function AiDraftPanel({ patientId, onCreated, startOpen = false, initialNotes = "" }: { patientId: string; onCreated: () => void; startOpen?: boolean; initialNotes?: string }) {
   const toast = useToast();
   const [open, setOpen] = useState(startOpen);
-  const [notes, setNotes] = useState("");
+  const [notes, setNotes] = useState(initialNotes);
   const [busy, setBusy] = useState(false);
   const [removed, setRemoved] = useState<string[]>([]);
 
@@ -113,7 +113,7 @@ export function AiSummaryCard({ patientId }: { patientId: string }) {
 }
 
 /** Patient questions waiting for a clinician. Only a clinician can answer. */
-export function QuestionsCard({ patientId }: { patientId?: string }) {
+export function QuestionsCard({ patientId, prefillAnswer = "" }: { patientId?: string; prefillAnswer?: string }) {
   const toast = useToast();
   const q = useApi<QuestionView[]>(`/api/questions${patientId ? `?patientId=${patientId}` : ""}`, { pollMs: 5000 });
   const [draft, setDraft] = useState<Record<string, string>>({});
@@ -150,9 +150,9 @@ export function QuestionsCard({ patientId }: { patientId?: string }) {
             </p>
             <label className="mt-2 block text-sm font-medium">
               Your answer
-              <textarea rows={2} maxLength={2000} className={input} value={draft[x.id] ?? ""} onChange={(e) => setDraft((d) => ({ ...d, [x.id]: e.target.value }))} />
+              <textarea rows={2} maxLength={2000} className={input} value={draft[x.id] ?? prefillAnswer} onChange={(e) => setDraft((d) => ({ ...d, [x.id]: e.target.value }))} />
             </label>
-            <Button className="mt-2" loading={busy === x.id} disabled={!(draft[x.id] ?? "").trim()} onClick={() => answer(x.id)}>
+            <Button className="mt-2" loading={busy === x.id} disabled={!(draft[x.id] ?? prefillAnswer).trim()} onClick={() => answer(x.id)}>
               Send answer
             </Button>
           </li>

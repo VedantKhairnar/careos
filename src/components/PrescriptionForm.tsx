@@ -4,12 +4,12 @@ import { useState } from "react";
 import { api, ApiError } from "@/lib/api";
 import { Button, useToast } from "./ui";
 
-export function PrescriptionForm({ patientId, onCreated, startOpen = false }: { patientId: string; onCreated: () => void; startOpen?: boolean }) {
+export function PrescriptionForm({ patientId, onCreated, startOpen = false, initialMedication = "", initialInstructions = "" }: { patientId: string; onCreated: () => void; startOpen?: boolean; initialMedication?: string; initialInstructions?: string }) {
   const toast = useToast();
   const [open, setOpen] = useState(startOpen);
   const [busy, setBusy] = useState(false);
-  const [med, setMed] = useState("");
-  const [instr, setInstr] = useState("");
+  const [med, setMed] = useState(initialMedication);
+  const [instr, setInstr] = useState(initialInstructions);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -18,8 +18,8 @@ export function PrescriptionForm({ patientId, onCreated, startOpen = false }: { 
       await api("/api/prescriptions", { body: { patientId, medicationReference: med, ...(instr.trim() ? { approvedInstructions: instr } : {}) } });
       toast("Authorized and sent (simulated transmission).");
       setOpen(false);
-      setMed("");
-      setInstr("");
+      setMed(initialMedication);
+      setInstr(initialInstructions);
       onCreated();
     } catch (err) {
       toast(err instanceof ApiError ? err.message : "Could not create the prescription.", "danger");

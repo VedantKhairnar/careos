@@ -91,6 +91,13 @@ export interface DraftResult {
   model: string;
 }
 
+/** Some models fill an optional field they have no value for with "" or null. Treat those as absent. */
+export function dropEmpty(v: unknown): unknown {
+  if (Array.isArray(v)) return v.map(dropEmpty);
+  if (v && typeof v === "object") return Object.fromEntries(Object.entries(v as Record<string, unknown>).filter(([, x]) => x !== "" && x !== null).map(([k, x]) => [k, dropEmpty(x)]));
+  return v;
+}
+
 export async function draftCarePlanFromNotes(clinician: Actor, input: { patientId: string; notes: string }): Promise<DraftResult> {
   if (clinician.role !== "clinician") throw new HttpError(403, "forbidden", "Only a clinician can request a draft");
   const notes = input.notes.trim();
@@ -100,9 +107,11 @@ export async function draftCarePlanFromNotes(clinician: Actor, input: { patientI
   const schema = z.toJSONSchema(CarePlanContentSchema) as Record<string, unknown>;
   delete schema.$schema;
   const startedAt = new Date().toISOString();
+  let draftRunId = "";
   const res = await loggedRun(
     { agent: "doctor-agent", trigger: "doctor.draft_plan", patientId: input.patientId, start: "Clinician asked for a care-plan draft from visit notes" },
     async (_o, runId) => {
+      draftRunId = runId;
       const r = await getModel().generate({
     system: DRAFT_SYSTEM,
     contents: [{ role: "user", parts: [{ text: `Visit notes:\n"""\n${notes}\n"""` }] }],
@@ -112,7 +121,7 @@ export async function draftCarePlanFromNotes(clinician: Actor, input: { patientI
       logStep(runId, { agent: "doctor-agent", kind: "think", title: "Gemini call", detail: `${r.model} · ${r.usage.input} tokens in, ${r.usage.output} out`, ms: r.latencyMs, ok: true });
       return r;
     },
-    () => "Draft created and sent to review. It cannot be approved by the agent.",
+    () => "The model answered. Checking the draft against the clinician's notes next.",
   );
   await runtime().store.logAgentExecution({ agent: "doctor", patientId: input.patientId, startedAt, durationMs: res.latencyMs, ok: true, tool: "draft_care_plan", model: res.model, inputTokens: res.usage.input, outputTokens: res.usage.output });
 
@@ -122,12 +131,16 @@ export async function draftCarePlanFromNotes(clinician: Actor, input: { patientI
   } catch {
     throw new AiUnavailable("bad_output", "The assistant's draft could not be read. Please try again.");
   }
-  const parsed = CarePlanContentSchema.safeParse(json);
-  if (!parsed.success) throw new AiUnavailable("bad_output", "The assistant's draft was not in the expected format. Please try again.");
+  const parsed = CarePlanContentSchema.safeParse(dropEmpty(json));
+  if (!parsed.success) {
+    logStep(draftRunId, { agent: "doctor-agent", kind: "error", title: "Draft rejected", detail: `The draft was not in the expected format: ${parsed.error.issues[0]?.path.join(".")} ${parsed.error.issues[0]?.message}`, ok: false });
+    throw new AiUnavailable("bad_output", "The assistant's draft was not in the expected format. Please try again.");
+  }
 
   const grounded = groundDraft(parsed.data, notes);
   // Submitted as the agent: it enters review, it cannot approve, and the patient cannot see it yet.
   const plan = await createCarePlan(DOCTOR_AGENT_ACTOR, { patientId: input.patientId, content: grounded.content });
+  logStep(draftRunId, { agent: "doctor-agent", kind: "decision", title: "Draft saved for review", detail: `Nothing the notes did not say was kept${grounded.removed.length ? ` (${grounded.removed.length} unsupported value(s) removed)` : ""}. The agent cannot approve it.`, ok: true });
   return { plan, removed: grounded.removed, model: res.model };
 }
 

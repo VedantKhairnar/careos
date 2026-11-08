@@ -129,10 +129,10 @@ test("live demo across three tabs in one browser", async ({ context }) => {
     await press("Ask clinician a question");
     await expect(rx.getByText("Waiting for the clinician to answer the question.")).toBeVisible();
     await doctor.goto("/doctor");
-    const resolve = doctor.getByRole("button", { name: "Resolve pharmacy question" });
-    await expect(resolve).toBeVisible({ timeout: 30_000 });
+    const q = doctor.locator("li").filter({ hasText: RX }).first();
+    await expect(q.getByRole("button", { name: "Resolve pharmacy question" })).toBeVisible({ timeout: 30_000 });
     await shot(doctor, "06-doctor-overview-pharmacy-question");
-    await resolve.click();
+    await q.getByRole("button", { name: "Resolve pharmacy question" }).click();
     await expect(doctor.getByText("Recorded that you answered the pharmacy.")).toBeVisible();
     await press("Mark ready for pickup");
     await press("Confirm pickup");
@@ -182,7 +182,7 @@ test("live demo across three tabs in one browser", async ({ context }) => {
     await checkA11y(doctor, "doctor analytics");
     await doctor.goto("/doctor/agents");
     await expect(doctor.getByText("Model calls")).toBeVisible();
-    await expect(doctor.getByText("get_medication_schedule").first()).toBeVisible({ timeout: 30_000 });
+    await expect(doctor.locator("code").filter({ hasText: "get_medication_schedule" }).first()).toBeVisible({ timeout: 30_000 });
     await shot(doctor, "09-doctor-agent-activity");
     await checkA11y(doctor, "doctor agent activity");
   });

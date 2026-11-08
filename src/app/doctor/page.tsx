@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { GAP_LABEL, RxBadge } from "@/components/rx";
 import { RxActions } from "@/components/RxActions";
-import { CaseBoard } from "@/components/CaseBoard";
+import { AgentSuggestionsCard } from "@/components/AgentSuggestions";
+import { QuestionsCard } from "@/components/doctorAi";
 import { Badge, Card, CardSkeleton, EmptyState, ErrorState } from "@/components/ui";
 import type { CareGap } from "@/domain/careGap";
 import type { CarePlanView } from "@/server/carePlans";
@@ -42,12 +43,6 @@ export default function DoctorOverview() {
     <>
       <h1 className="text-2xl font-bold">Overview</h1>
 
-      <CaseBoard />
-
-      <details className="rounded-2xl border border-line bg-surface">
-        <summary className="cursor-pointer select-none p-4 font-semibold">Everything waiting on you, across all patients</summary>
-        <div className="space-y-4 p-4 pt-0">
-
       {error && <ErrorState message={error.message} onRetry={() => { void patients.reload(); void rx.reload(); void plans.reload(); void gaps.reload(); }} />}
 
       {loading ? (
@@ -61,6 +56,10 @@ export default function DoctorOverview() {
           <Stat label="Open care gaps" value={openGaps.length} tone="warning" />
         </div>
       )}
+
+      <AgentSuggestionsCard />
+
+      <QuestionsCard />
 
       <Card title="Needs your attention">
         {loading ? (
@@ -112,8 +111,6 @@ export default function DoctorOverview() {
           </ul>
         )}
       </Card>
-        </div>
-      </details>
     </>
   );
 }

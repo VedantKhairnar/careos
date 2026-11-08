@@ -92,11 +92,6 @@ export default function SignIn() {
         <strong>Demo sign-in.</strong> {BRAND.demoNotice} Pick a role to explore; there are no passwords because there are no real accounts.
       </div>
 
-      <a href="/demo/stage" className="block rounded-xl border-2 border-accent bg-surface p-4 hover:bg-surface-2">
-        <p className="font-semibold text-accent">Demo stage (recommended for presenting)</p>
-        <p className="mt-1 text-sm text-muted">Doctor, patient and pharmacy side by side in one screen, with the live agent log next to them. No tabs to juggle.</p>
-      </a>
-
       <ul className="grid gap-3 sm:grid-cols-2">
         {ROLES.map((r) => (
           <li key={r.key}>

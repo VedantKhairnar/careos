@@ -23,6 +23,7 @@ const SOURCE_LABEL: Record<string, string> = {
   get_upcoming_appointments: "your follow-ups",
   get_care_timeline: "your care timeline",
   create_clarification_request: "a question sent to your care team",
+  "urgent-symptom check (no AI used)": "a check for urgent symptoms (no AI used)",
 };
 
 const STARTERS = ["What medicines should I take today?", "What is the status of my prescription?", "When is my next follow-up?"];
@@ -109,7 +110,7 @@ export default function AskPage() {
                 {m.role === "assistant" && m.sources && m.sources.length > 0 && (
                   <p className="mt-1 text-xs text-muted">Based on: {m.sources.map((s) => SOURCE_LABEL[s] ?? s).join(", ")}</p>
                 )}
-                {m.role === "assistant" && m.trace && <AgentTrace steps={m.trace} />}
+                {m.role === "assistant" && m.trace && <AgentTrace steps={m.trace} labels={SOURCE_LABEL} />}
                 {m.role === "assistant" && m.askedCareTeam && <div className="mt-2"><Badge tone="info">Sent to your care team</Badge></div>}
                 {m.role === "unavailable" && (
                   <Button className="mt-2" variant="secondary" onClick={() => sendToTeam(m.original)}>

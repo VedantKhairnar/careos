@@ -88,7 +88,8 @@ test("event-driven agent drafts, clinician approves, patient is told; assistant 
     await expect(alex.getByText(/Based on:/)).toBeVisible({ timeout: 60_000 });
     const trace = alex.getByText(/How the assistant worked this out/);
     await trace.click();
-    await expect(alex.getByText("get_prescription_status").first()).toBeVisible();
+    await expect(alex.getByText("your prescription status").first()).toBeVisible(); // plain words for the patient, never the internal name
+    await expect(alex.locator("body")).not.toContainText(/get_[a-z_]+/);
     await shot(alex, "12-alex-assistant-trace");
     await checkA11y(alex, "assistant with trace");
   });

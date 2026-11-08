@@ -291,3 +291,10 @@ describe("schemas sent to Gemini", () => {
     expect(out).toEqual({ type: "object", required: ["a"], properties: { a: { type: "string", description: "keep me" }, b: { type: "array", items: { type: "string" } } } });
   });
 });
+
+describe("model output cleanup", () => {
+  it("treats empty-string and null optional fields as absent (some models fill them in)", async () => {
+    const { dropEmpty } = await import("@/agents/doctorAgent");
+    expect(dropEmpty({ a: "x", endDate: "", notes: null, meds: [{ name: "M", endDate: "", times: ["09:00"] }] })).toEqual({ a: "x", meds: [{ name: "M", times: ["09:00"] }] });
+  });
+});

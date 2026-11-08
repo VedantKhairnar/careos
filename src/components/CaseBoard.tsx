@@ -17,6 +17,15 @@ import { RxActions } from "./RxActions";
 import { CardSkeleton } from "./ui";
 import { VisitStatus } from "./VisitStatus";
 
+const iso = (daysFromNow: number) => new Date(Date.now() + daysFromNow * 86_400_000).toISOString().slice(0, 10);
+
+/** Good demo content, already in the boxes, so nobody has to type or paste during a demo. Fictional, with explicit doses and times. */
+const demoNotes = (name: string) =>
+  `Fictional demo visit for ${name}. Recovering well after the procedure, no signs of infection. Rest, keep the area elevated and keep the dressing dry. ` +
+  `Demo-Antibiotic: 1 capsule at 9am and 9pm, starting ${iso(0)} until ${iso(4)}. ` +
+  `Demo-Analgesic: 1 tablet at 8am, 2pm and 8pm, starting ${iso(0)}. ` +
+  `Review visit on ${iso(14)}. Call the clinic if the area becomes very red, hot or swollen, or if there is a fever.`;
+
 interface Summary {
   patient: { id: string; displayName: string };
   plans: CarePlanView[];
@@ -31,6 +40,7 @@ interface Summary {
 export function CaseBoard() {
   const patients = useApi<{ id: string }[]>("/api/patients", { pollMs: 10000 });
   const [picked, setPicked] = useState<string | null>(null);
+  const [prefill] = useState(() => ({ notes: demoNotes, today: iso(0) })); // computed once, when the board opens
   const pid = picked ?? patients.data?.find((p) => p.id === "p_alex")?.id ?? patients.data?.[0]?.id ?? null;
   const summary = useApi<Summary>(pid ? `/api/patients/${pid}` : null, { pollMs: 4000 });
   const sugg = useApi<SuggestionView[]>("/api/agent-suggestions", { pollMs: 3000 });
@@ -73,13 +83,13 @@ export function CaseBoard() {
   if (proposals.length > 0)
     items.push({ key: "proposals", title: "Review what the agents prepared", why: "The pharmacy reported a problem. The agents investigated and drafted a message. Nothing is sent until you decide.", node: <AgentSuggestionsCard /> });
   if (openQuestions.length > 0)
-    items.push({ key: "questions", title: "Answer the patient's question", why: "The patient (or their assistant) asked something only a clinician can answer.", node: <QuestionsCard patientId={pid} /> });
+    items.push({ key: "questions", title: "Answer the patient's question", why: "The patient (or their assistant) asked something only a clinician can answer.", node: <QuestionsCard patientId={pid} prefillAnswer="Please keep taking it until your review visit, and call us if anything changes." /> });
   if (rx?.state === "DELAYED")
     items.push({ key: "delay", title: "Follow up on the delayed prescription", why: "The pharmacy reported a delay. Log your follow-up once you have acted on it.", node: <RxActions workflowId={rx.workflowId} state={rx.state} onDone={reload} /> });
   if (items.length === 0 && !hasApproved)
-    items.push({ key: "record", title: "Record this visit", why: "Paste your visit notes. The assistant drafts a plan for you to review. It cannot approve it.", node: <AiDraftPanel patientId={pid} onCreated={reload} startOpen /> });
+    items.push({ key: "record", title: "Record this visit", why: "Paste your visit notes. The assistant drafts a plan for you to review. It cannot approve it.", node: <AiDraftPanel key={pid} patientId={pid} onCreated={reload} startOpen initialNotes={prefill.notes(patientName(pid))} /> });
   if (items.length === 0 && !rxActive)
-    items.push({ key: "send", title: "Send a prescription", why: "The plan is approved. If the patient needs a medicine, authorize it here (simulated pharmacy).", node: <PrescriptionForm patientId={pid} onCreated={reload} startOpen /> });
+    items.push({ key: "send", title: "Send a prescription", why: "The plan is approved. If the patient needs a medicine, authorize it here (simulated pharmacy).", node: <PrescriptionForm key={pid} patientId={pid} onCreated={reload} startOpen initialMedication="Demo-Antibiotic (fictional)" initialInstructions="Take 1 capsule at 9am and 9pm with food until finished. Fictional demo instructions." /> });
 
   const primary = items[0];
   const rest = items.slice(1);

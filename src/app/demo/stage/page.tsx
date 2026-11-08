@@ -10,17 +10,24 @@ import { api, ApiError, FRAME_PREFIX, setActingAs } from "@/lib/api";
 import { useApi } from "@/lib/useApi";
 
 const WHO = [
-  { key: "doctor", label: "Doctor", sub: "Dr. Chen", src: "/doctor", body: { role: "clinician", displayName: "Dr. Chen" } },
-  { key: "patient", label: "Patient", sub: "Alex Rivera", src: "/patient", body: { role: "patient", patientId: "p_alex", displayName: "Alex Rivera" } },
+  { key: "doctor", label: "Doctor", sub: "Dr. Chen", src: "/doctor/case", body: { role: "clinician", displayName: "Dr. Chen" } },
+  { key: "patient", label: "Patient", sub: "Alex Rivera", src: "/patient/visit", body: { role: "patient", patientId: "p_alex", displayName: "Alex Rivera" } },
   { key: "pharmacy", label: "Pharmacy", sub: "Simulator", src: "/demo/pharmacy", body: { role: "demo_operator", displayName: "Demo operator" } },
 ] as const;
 
+/** Shortcuts shown above each window, so nobody has to hunt for a page inside a small window. */
+const SHORTCUTS: Record<string, { label: string; src: string }[]> = {
+  doctor: [{ label: "Case board", src: "/doctor/case" }, { label: "Agent room", src: "/doctor/agents" }, { label: "Patients", src: "/doctor/patients" }],
+  patient: [{ label: "Visit", src: "/patient/visit" }, { label: "Home", src: "/patient" }, { label: "Medications", src: "/patient/medications" }, { label: "Ask", src: "/patient/ask" }, { label: "Updates", src: "/patient/notifications" }],
+  pharmacy: [],
+};
+
 const STEPS = [
-  { who: "Here", title: "Start afresh", text: "Press Start afresh above. Everything begins empty." },
-  { who: "Doctor", title: "Record the visit", text: "The doctor's board says Your next action: Record this visit. Press Copy sample notes above, paste them into Visit notes, and press Create draft for review. Watch the log column: the doctor agent runs." },
+  { who: "Here", title: "Start afresh", text: "Press Start afresh above. Everything begins empty. Each window has shortcuts for its pages." },
+  { who: "Doctor", title: "Record the visit", text: "The doctor's board says Your next action: Record this visit. The visit notes are already filled in. Just press Create draft for review. Watch the log column: the doctor agent runs." },
   { who: "Doctor", title: "A human approves the plan", text: "The next action is now Review and approve the care plan. Tick the box and press Approve care plan. The AI could not do this. The patient window now shows the visit." },
   { who: "Patient", title: "Patient sees the visit", text: "The patient's home shows Your last visit with a status bar. Under Your medicines today, press Taken on a dose." },
-  { who: "Doctor", title: "Send a prescription", text: "The next action is Send a prescription. Type a fictional medicine and press Authorize prescription. The patient's status bar moves on." },
+  { who: "Doctor", title: "Send a prescription", text: "The next action is Send a prescription. The medicine is already filled in. Just press Authorize prescription. The patient's status bar moves on." },
   { who: "Pharmacy", title: "Pharmacy receives", text: "Press Receive prescription, then Acknowledge. The agents stay asleep: routine events do not wake them." },
   { who: "Pharmacy", title: "Pharmacy reports a delay", text: "Press Report a delay, then watch the log column. The Care Coordinator wakes by itself, investigates, hands off to the Writer, is checked by the Safety Reviewer, and proposes." },
   { who: "Doctor", title: "A human decides", text: "The next action is Review what the agents prepared. Edit the wording if you like, then press Approve and send to patient." },
@@ -28,8 +35,6 @@ const STEPS = [
   { who: "Pharmacy", title: "Finish (optional)", text: "Press Start processing, Mark ready for pickup, then Confirm pickup. The status bar fills to 6 of 6." },
 ] as const;
 
-const SAMPLE = (date: string) =>
-  `Fictional demo. Rest for a week, keep the dressing dry. Demo-Med-X 1 tablet at 8am and 8pm starting ${date}. Review visit in two weeks.`;
 
 /** One screen for the whole demo: three live windows (each signed in as its own person) and the agents' log. */
 export default function Stage() {
@@ -38,6 +43,7 @@ export default function Stage() {
   const [guide, setGuide] = useState(true);
   const [gen, setGen] = useState(0); // bump to reload all windows
   const [busy, setBusy] = useState(false);
+  const [src, setSrc] = useState<Record<string, { to: string; n: number }>>({}); // n forces a reload even when the address is the same
 
   // Sign in as all three people, once. The Stage itself acts as the pharmacy operator (for Start afresh and the log).
   const ready = useQuery({
@@ -84,9 +90,6 @@ export default function Stage() {
           <Button variant="danger" loading={busy} onClick={startAfresh}>
             Start afresh
           </Button>
-          <Button variant="secondary" onClick={() => void navigator.clipboard?.writeText(SAMPLE(new Date().toISOString().slice(0, 10)))}>
-            Copy sample notes
-          </Button>
           <Button variant="secondary" onClick={() => setGen((g) => g + 1)}>
             Reload windows
           </Button>
@@ -117,10 +120,17 @@ export default function Stage() {
         <div className="grid min-h-0 flex-1 grid-cols-1 gap-2 overflow-y-auto p-2 lg:grid-cols-[1.25fr_1fr_1fr_1fr] lg:overflow-hidden">
           {WHO.map((w) => (
             <section key={w.key + gen} aria-label={`${w.label} window`} className="flex h-[75vh] min-h-0 flex-col overflow-hidden rounded-xl border border-line bg-surface lg:h-auto">
-              <p className="border-b border-line bg-surface-2 px-3 py-1.5 text-sm font-semibold">
-                {w.label} <span className="font-normal text-muted">· {w.sub}</span>
-              </p>
-              <iframe name={FRAME_PREFIX + ready.data[w.key]} src={w.src} title={`${w.label} window (${w.sub})`} className="min-h-0 w-full flex-1 bg-bg" />
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-line bg-surface-2 px-3 py-1.5 text-sm">
+                <span className="font-semibold">
+                  {w.label} <span className="font-normal text-muted">· {w.sub}</span>
+                </span>
+                {SHORTCUTS[w.key].map((c) => (
+                  <button key={c.src} onClick={() => setSrc((m) => ({ ...m, [w.key]: { to: c.src, n: (m[w.key]?.n ?? 0) + 1 } }))} className="min-h-8 rounded px-1 text-accent underline">
+                    {c.label}
+                  </button>
+                ))}
+              </div>
+              <iframe key={src[w.key]?.n ?? 0} name={FRAME_PREFIX + ready.data[w.key]} src={src[w.key]?.to ?? w.src} title={`${w.label} window (${w.sub})`} className="min-h-0 w-full flex-1 bg-bg" />
             </section>
           ))}
           <section aria-label="Live agent log" className="flex h-[75vh] min-h-0 flex-col overflow-hidden rounded-xl border border-line bg-surface lg:h-auto">
