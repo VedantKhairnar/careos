@@ -51,3 +51,7 @@ next-env.d.ts
 
 # Timescale Cloud CA: a public certificate the app needs to verify TLS
 !db/timescale-ca.pem
+
+# Playwright output
+/test-results/
+/playwright-report/

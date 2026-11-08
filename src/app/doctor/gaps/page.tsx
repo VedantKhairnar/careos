@@ -37,7 +37,8 @@ export default function GapsPage() {
                 </div>
                 <p className="mt-1 text-sm">{g.description}</p>
                 <p className="text-sm text-muted">
-                  {patientName(g.patientId)} · since {timeAgo(g.sinceAt)}
+                  {patientName(g.patientId)}
+                  {rx.data?.find((r) => r.workflowId === g.workflowId) ? ` · ${rx.data.find((r) => r.workflowId === g.workflowId)!.medicationReference}` : ""} · since {timeAgo(g.sinceAt)}
                 </p>
                 {state && (g.rule === "delay_unaddressed" || g.rule === "clarification_unresolved") && (
                   <div className="mt-3">

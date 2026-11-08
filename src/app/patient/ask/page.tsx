@@ -2,6 +2,7 @@
 
 import { Send, ShieldAlert, UserRound } from "lucide-react";
 import { useRef, useState } from "react";
+import { RichText } from "@/components/RichText";
 import { Badge, Button, Card, EmptyState, useToast } from "@/components/ui";
 import type { PatientChatResult } from "@/agents/patientAgent";
 import type { QuestionView } from "@/server/questions";
@@ -103,7 +104,7 @@ export default function AskPage() {
               </div>
             ) : (
               <div key={i} className={`mr-8 rounded-2xl rounded-bl-sm px-3 py-2 ${m.role === "assistant" && m.urgent ? "bg-danger-bg text-danger" : "bg-surface-2"}`}>
-                <p className="whitespace-pre-wrap">{m.text}</p>
+                <RichText text={m.text} />
                 {m.role === "assistant" && m.sources && m.sources.length > 0 && (
                   <p className="mt-1 text-xs text-muted">Based on: {m.sources.map((s) => SOURCE_LABEL[s] ?? s).join(", ")}</p>
                 )}

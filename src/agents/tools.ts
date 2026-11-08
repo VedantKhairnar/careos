@@ -51,7 +51,7 @@ export const getApprovedCarePlan = defineTool({
 export const getMedicationSchedule = defineTool({
   name: "get_medication_schedule",
   description:
-    "Medicines and today's doses from approved plans. A medicine with schedule 'needs_clarification' has NO confirmed schedule; the missing fields are listed. Dose statuses are what the patient reported.",
+    "Medicines and today's doses from approved plans. A medicine whose scheduleConfirmed is false has NO confirmed schedule yet; stillNeededFromCareTeam says what is missing. Dose statuses are what the patient reported.",
   args: NoArgs,
   run: async (actor) => {
     const { medications: meds } = await medications(actor);
@@ -59,8 +59,8 @@ export const getMedicationSchedule = defineTool({
       name: m.name,
       dose: m.dose,
       notes: m.notes,
-      schedule: m.schedule,
-      missing: m.missing,
+      scheduleConfirmed: m.schedule === "ready",
+      stillNeededFromCareTeam: m.missing.map((x) => ({ dose: "the dose", times: "the times", startDate: "the start date", "valid times": "valid times", "valid endDate": "a valid end date" })[x] ?? x),
       doses: m.doses.map((d) => ({ scheduledFor: d.scheduledFor, status: d.status })),
     }));
   },

@@ -99,7 +99,10 @@ export default function DoctorOverview() {
                   <p className="font-medium">{GAP_LABEL[g.rule] ?? g.rule}</p>
                   <Badge tone="warning">{g.responsible === "clinician" ? "Waiting on you" : "Waiting on patient"}</Badge>
                 </div>
-                <p className="text-sm text-muted">{patientName(g.patientId)} · {g.description} · since {timeAgo(g.sinceAt)}</p>
+                <p className="text-sm text-muted">
+                  {patientName(g.patientId)}
+                  {(rx.data ?? []).find((r) => r.workflowId === g.workflowId) ? ` · ${(rx.data ?? []).find((r) => r.workflowId === g.workflowId)!.medicationReference}` : ""} · {g.description} · since {timeAgo(g.sinceAt)}
+                </p>
               </li>
             ))}
           </ul>

@@ -13,6 +13,7 @@ import { useApi } from "@/lib/useApi";
 interface Workflow {
   workflowId: string;
   patientId: string;
+  medicationReference: string;
   state: string;
   text: string;
 }
@@ -114,7 +115,8 @@ function Console() {
               <Card>
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
-                    <p className="font-semibold">{patientName(w.patientId)}</p>
+                    <p className="font-semibold">{w.medicationReference || "Prescription"}</p>
+                    <p className="text-sm text-muted">for {patientName(w.patientId)}</p>
                     <p className="text-xs text-muted">{w.workflowId}</p>
                   </div>
                   <RxBadge state={w.state} />

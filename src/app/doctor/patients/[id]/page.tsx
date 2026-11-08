@@ -13,7 +13,7 @@ import type { CarePlanView } from "@/server/carePlans";
 import type { MedicationView } from "@/server/patientCare";
 import type { PrescriptionSummary } from "@/server/services";
 import { api, ApiError } from "@/lib/api";
-import { formatTime } from "@/lib/format";
+import { formatDate, formatTime } from "@/lib/format";
 import { useApi } from "@/lib/useApi";
 
 interface Summary {
@@ -39,6 +39,10 @@ export default function PatientDetail() {
   if (summary.loading) return <CardSkeleton rows={6} />;
   if (summary.error) return <ErrorState message={summary.error.message} onRetry={summary.reload} />;
   const s = summary.data!;
+  const medicineOf = (workflowId: string) => {
+    const m = s.prescriptions.find((r) => r.workflowId === workflowId)?.medicationReference;
+    return m ? ` Medicine: ${m}.` : "";
+  };
   const reload = () => {
     void summary.reload();
     void meds.reload();
@@ -60,7 +64,7 @@ export default function PatientDetail() {
                 <p className="font-medium">{p.content.title}</p>
                 <div className="flex items-center gap-2">
                   {p.simulated && <Badge tone="info">Simulated</Badge>}
-                  {p.state === "APPROVED" ? <Badge tone="success">Approved</Badge> : <Badge tone="warning">Awaiting approval</Badge>}
+                  {p.state === "APPROVED" ? <Badge tone="success">Approved{p.approvedAt ? ` ${formatDate(p.approvedAt)}` : ""}</Badge> : <Badge tone="warning">Awaiting approval</Badge>}
                 </div>
               </div>
               <p className="mt-1 text-sm text-muted">{p.content.summary}</p>
@@ -114,7 +118,10 @@ export default function PatientDetail() {
                   <p className="font-medium">{GAP_LABEL[g.rule] ?? g.rule}</p>
                   <Badge tone="warning">{g.responsible === "clinician" ? "Waiting on you" : "Waiting on patient"}</Badge>
                 </div>
-                <p className="text-sm text-muted">{g.description}</p>
+                <p className="text-sm text-muted">
+                  {g.description}
+                  {medicineOf(g.workflowId)}
+                </p>
               </li>
             ))}
           </ul>

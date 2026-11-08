@@ -71,7 +71,7 @@ export default function AnalyticsPage() {
 
   const hourly = new Map<string, number>();
   for (const p of a.eventsHourly) hourly.set(p.bucket, (hourly.get(p.bucket) ?? 0) + p.value);
-  const hourlyRows = [...hourly.entries()].slice(-24).map(([b, v]) => ({ label: hour(b), value: v }));
+  const hourlyRows = [...hourly.entries()].slice(-24).map(([b, v], i, all) => ({ label: i === 0 || day(b) !== day(all[i - 1][0]) ? `${day(b)} ${hour(b)}` : hour(b), value: v }));
 
   const metricNames = [...new Set(a.metricsDaily.map((m) => m.metric))];
   const notifDays = [...new Set(a.notificationsDaily.map((n) => n.bucket))].slice(-7);
@@ -83,7 +83,7 @@ export default function AnalyticsPage() {
       <div>
         <h1 className="text-2xl font-bold">Analytics</h1>
         <p className="text-sm text-muted">
-          Every figure here is a live query against Tiger Data ({a.source}). Updated {new Date(a.generatedAt).toLocaleTimeString()}.
+          Every figure here is a live query against {a.source}. Updated {new Date(a.generatedAt).toLocaleTimeString()}.
         </p>
       </div>
 

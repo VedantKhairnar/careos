@@ -235,13 +235,14 @@ export async function listPrescriptions(actor: Actor, patientId?: string): Promi
   });
 }
 
-export async function listWorkflows(): Promise<{ workflowId: string; patientId: string; state: string; text: string }[]> {
+export async function listWorkflows(): Promise<{ workflowId: string; patientId: string; medicationReference: string; state: string; text: string }[]> {
   const all = await runtime().store.listAll();
   const ids = [...new Set(all.filter((e) => e.type === "prescription.authorized").map((e) => e.workflowId))];
   return ids.map((id) => {
     const evs = all.filter((e) => e.workflowId === id);
     const s = prescriptionStatus(evs);
-    return { workflowId: id, patientId: evs[0].patientId, state: s.state, text: s.clinicianText };
+    const medicationReference = String(evs.find((e) => e.type === "prescription.authorized")?.payload.medicationReference ?? "");
+    return { workflowId: id, patientId: evs[0].patientId, medicationReference, state: s.state, text: s.clinicianText };
   });
 }
 

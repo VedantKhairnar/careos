@@ -2,10 +2,11 @@
 
 import { AlertTriangle, CalendarClock } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
 import { DoseRow } from "@/components/DoseRow";
 import { RxBadge, type RxView } from "@/components/rx";
 import { useMe } from "@/components/session";
-import { Badge, Card, CardSkeleton, EmptyState, ErrorState, SourceDetails } from "@/components/ui";
+import { Badge, Button, Card, CardSkeleton, EmptyState, ErrorState, SourceDetails } from "@/components/ui";
 import type { CarePlanView } from "@/server/carePlans";
 import type { MedicationView, NotificationView } from "@/server/patientCare";
 import type { PrescriptionSummary } from "@/server/services";
@@ -28,15 +29,21 @@ export default function PatientHome() {
   const first = me.displayName?.split(" ")[0] ?? "there";
   const attention = (notifs.data?.notifications ?? []).filter((n) => n.important && !n.acknowledged);
   const now = useNow();
+  const [showAll, setShowAll] = useState(false);
   const doses = (meds.data?.medications ?? [])
     .flatMap((m) => m.doses.map((d) => ({ d, label: m.dose })))
-    .filter(({ d }) => Math.abs(Date.parse(d.scheduledFor) - now) <= 14 * 3_600_000)
+    .filter(({ d }) => {
+      const diff = Date.parse(d.scheduledFor) - now; // still actionable: up to 3 hours ago, or coming up in the next 14
+      return diff >= -3 * 3_600_000 && diff <= 14 * 3_600_000;
+    })
     .sort((a, b) => a.d.scheduledFor.localeCompare(b.d.scheduledFor));
   const needsClarity = (meds.data?.medications ?? []).filter((m) => m.schedule === "needs_clarification");
   const followUps = (plans.data ?? [])
     .flatMap((p) => p.content.followUps.map((f) => ({ ...f, plan: p.content.title })))
     .filter((f) => f.dueDate)
-    .sort((a, b) => (a.dueDate ?? "").localeCompare(b.dueDate ?? ""));
+    .sort((a, b) => (a.dueDate ?? "").localeCompare(b.dueDate ?? ""))
+    // several plans can list the same visit; show it once
+    .filter((f, i, all) => all.findIndex((x) => x.description === f.description && x.dueDate === f.dueDate) === i);
 
   return (
     <>
@@ -65,10 +72,15 @@ export default function PatientHome() {
           <EmptyState title="Nothing scheduled right now" hint="Reminders appear here once your care team has approved a medicine schedule." />
         ) : (
           <ul className="space-y-2">
-            {doses.map(({ d, label }) => (
+            {(showAll ? doses : doses.slice(0, 4)).map(({ d, label }) => (
               <DoseRow key={`${d.planId}${d.medicationName}${d.scheduledFor}`} dose={d} doseLabel={label} onChanged={meds.reload} />
             ))}
           </ul>
+        )}
+        {doses.length > 4 && (
+          <Button variant="secondary" className="mt-3 w-full" onClick={() => setShowAll((v) => !v)}>
+            {showAll ? "Show fewer" : `Show all ${doses.length} doses`}
+          </Button>
         )}
         {needsClarity.map((m) => (
           <p key={m.planId + m.name} className="mt-3 rounded-xl bg-warning-bg p-3 text-sm text-warning">
