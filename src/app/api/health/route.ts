@@ -1,3 +1,4 @@
+import { bedrockConfigured } from "@/agents/model";
 import { getEnv } from "@/server/env";
 import { getPool } from "@/server/db";
 import { route } from "@/server/http";
@@ -17,6 +18,6 @@ export const GET = route(async () => {
       database = "unreachable";
     }
   }
-  const body = { data: { status: database === "unreachable" ? "degraded" : "ok", database, aiConfigured: env.geminiConfigured, demoMode: env.demoMode, time: new Date().toISOString() } };
+  const body = { data: { status: database === "unreachable" ? "degraded" : "ok", database, aiConfigured: env.geminiConfigured, aiFallback: bedrockConfigured() ? "bedrock" : "none", demoMode: env.demoMode, time: new Date().toISOString() } };
   return Response.json(body, { status: database === "unreachable" ? 503 : 200 });
 });

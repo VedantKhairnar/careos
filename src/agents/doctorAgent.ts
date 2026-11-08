@@ -4,7 +4,9 @@ import { CarePlanContentSchema, createCarePlan, type CarePlanContent, type CareP
 import { HttpError } from "@/server/http";
 import { runtime } from "@/server/runtime";
 import { AiUnavailable, getModel } from "./model";
+import { loggedRun } from "./loggedRun";
 import { runAgent } from "./runner";
+import { logStep } from "./runLog";
 import { DOCTOR_TOOLS } from "./tools";
 
 /** The Doctor Agent has its own identity. It can draft and submit for review, never approve. */
@@ -98,12 +100,20 @@ export async function draftCarePlanFromNotes(clinician: Actor, input: { patientI
   const schema = z.toJSONSchema(CarePlanContentSchema) as Record<string, unknown>;
   delete schema.$schema;
   const startedAt = new Date().toISOString();
-  const res = await getModel().generate({
+  const res = await loggedRun(
+    { agent: "doctor-agent", trigger: "doctor.draft_plan", patientId: input.patientId, start: "Clinician asked for a care-plan draft from visit notes" },
+    async (_o, runId) => {
+      const r = await getModel().generate({
     system: DRAFT_SYSTEM,
     contents: [{ role: "user", parts: [{ text: `Visit notes:\n"""\n${notes}\n"""` }] }],
     responseJsonSchema: schema,
     maxOutputTokens: 2048,
-  });
+      });
+      logStep(runId, { agent: "doctor-agent", kind: "think", title: "Gemini call", detail: `${r.model} · ${r.usage.input} tokens in, ${r.usage.output} out`, ms: r.latencyMs, ok: true });
+      return r;
+    },
+    () => "Draft created and sent to review. It cannot be approved by the agent.",
+  );
   await runtime().store.logAgentExecution({ agent: "doctor", patientId: input.patientId, startedAt, durationMs: res.latencyMs, ok: true, tool: "draft_care_plan", model: res.model, inputTokens: res.usage.input, outputTokens: res.usage.output });
 
   let json: unknown;
@@ -123,6 +133,10 @@ export async function draftCarePlanFromNotes(clinician: Actor, input: { patientI
 
 export async function summarizePatientForClinician(clinician: Actor, patientId: string): Promise<{ summary: string; sources: string[]; model: string }> {
   if (clinician.role !== "clinician") throw new HttpError(403, "forbidden", "Clinicians only");
-  const run = await runAgent({ name: "doctor", system: SUMMARY_SYSTEM, tools: DOCTOR_TOOLS, maxModelCalls: 3 }, clinician, patientId, `Summarize the current care coordination status for patient id "${patientId}".`);
+  const run = await loggedRun(
+    { agent: "doctor-agent", trigger: "doctor.summary", patientId, start: "Clinician asked for a status summary" },
+    (onStep) => runAgent({ name: "doctor", system: SUMMARY_SYSTEM, tools: DOCTOR_TOOLS, maxModelCalls: 3, onStep }, clinician, patientId, `Summarize the current care coordination status for patient id "${patientId}".`),
+    (r) => r.text.slice(0, 200),
+  );
   return { summary: run.text, sources: [...new Set(run.toolsUsed.filter((t) => t.ok).map((t) => t.name))], model: run.model };
 }

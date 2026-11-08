@@ -1,6 +1,8 @@
 import type { Actor } from "@/domain/events";
 import { HttpError } from "@/server/http";
+import { loggedRun } from "./loggedRun";
 import { runAgent, type AgentRun, type TraceStep } from "./runner";
+import { logStep, startRun, endRun } from "./runLog";
 import { PATIENT_TOOLS } from "./tools";
 
 export const URGENT_MESSAGE =
@@ -43,9 +45,21 @@ export async function askPatientAgent(actor: Actor, message: string): Promise<Pa
   const text = message.trim();
   if (!text) throw new HttpError(400, "validation_failed", "Please type a question");
   if (text.length > 1000) throw new HttpError(400, "validation_failed", "Please keep your question under 1000 characters");
+  const pid = actor.patientId ?? "";
+  if (isUrgent(text)) {
+    const id = `urgent-${Date.now()}`;
+    startRun({ runId: id, trigger: "patient.question", workflowId: "-", patientId: pid });
+    logStep(id, { agent: "patient-assistant", kind: "start", title: `Patient asked: "${text.slice(0, 80)}"` });
+    logStep(id, { agent: "safety-check", kind: "blocked", title: "Urgent-symptom check (code, no AI)", detail: "Matched an urgent phrase. The model was not called; the patient was sent straight to their care team.", ok: false });
+    endRun(id, "done");
+  }
   if (isUrgent(text)) return { answer: URGENT_MESSAGE, urgent: true, sources: [], askedCareTeam: false, model: null, trace: [{ kind: "tool", name: "urgent-symptom check (no AI used)", ok: true, ms: 0, detail: "Sent straight to your care team" }] };
 
-  const run: AgentRun = await runAgent({ name: "patient", system: PATIENT_SYSTEM, tools: PATIENT_TOOLS, maxModelCalls: 4 }, actor, actor.patientId ?? "", text);
+  const run: AgentRun = await loggedRun(
+    { agent: "patient-assistant", trigger: "patient.question", patientId: pid, start: `Patient asked: "${text.slice(0, 80)}"` },
+    (onStep) => runAgent({ name: "patient", system: PATIENT_SYSTEM, tools: PATIENT_TOOLS, maxModelCalls: 4, onStep }, actor, pid, text),
+    (r) => r.text.slice(0, 200),
+  );
   return {
     answer: run.text,
     urgent: false,

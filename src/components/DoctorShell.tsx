@@ -4,6 +4,7 @@ import { Activity, AlertTriangle, BarChart3, ClipboardList, LayoutDashboard, Log
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
+import { AgentDock } from "@/components/AgentDock";
 import { SessionGate, useMe, useSignOut } from "@/components/session";
 import { BRAND } from "@/lib/brand";
 
@@ -72,6 +73,7 @@ function Shell({ children }: { children: ReactNode }) {
         <main className="mx-auto max-w-5xl space-y-4 p-4 sm:p-6">{children}</main>
         <footer className="mx-auto max-w-5xl px-4 pb-6 text-xs text-muted sm:px-6">{BRAND.demoNotice}</footer>
       </div>
+      <AgentDock />
     </div>
   );
 }

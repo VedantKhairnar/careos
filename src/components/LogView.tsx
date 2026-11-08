@@ -5,6 +5,8 @@ const AGENT: Record<string, { label: string; cls: string }> = {
   writer: { label: "Writer", cls: "bg-surface-2 text-ink" },
   reviewer: { label: "Safety Reviewer", cls: "bg-warning-bg text-warning" },
   "safety-check": { label: "Code check", cls: "bg-warning-bg text-warning" },
+  "patient-assistant": { label: "Patient assistant", cls: "bg-info-bg text-info" },
+  "doctor-agent": { label: "Doctor agent", cls: "bg-info-bg text-info" },
   clinician: { label: "Clinician", cls: "bg-success-bg text-success" },
 };
 const KIND: Record<string, string> = { start: "WAKE", think: "THINK", tool: "TOOL", handoff: "HANDOFF", review: "REVIEW", blocked: "BLOCKED", decision: "DECIDE", gate: "WAIT", human: "HUMAN", error: "ERROR" };
@@ -15,11 +17,11 @@ const t = (iso: string) => new Date(iso).toLocaleTimeString([], { hour: "2-digit
 export function LogView({ entries }: { entries: LogEntry[] }) {
   return (
     <ol className="space-y-1.5 font-mono text-xs" aria-label="Agent log">
-      {entries.map((e) => {
+      {entries.map((e, i) => {
         const a = AGENT[e.agent] ?? { label: e.agent, cls: "bg-surface-2 text-ink" };
         const bad = e.ok === false || e.kind === "blocked" || e.kind === "error";
         return (
-          <li key={e.n} className="rounded-lg border border-line bg-surface p-2">
+          <li key={`${e.at}|${e.agent}|${e.n}|${i}`} className="rounded-lg border border-line bg-surface p-2">
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-muted">{t(e.at)}</span>
               <span className={`rounded px-1.5 py-0.5 font-sans text-[11px] font-semibold ${a.cls}`}>{a.label}</span>

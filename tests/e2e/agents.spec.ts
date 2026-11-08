@@ -44,6 +44,12 @@ test("event-driven agent drafts, clinician approves, patient is told; assistant 
 
   await test.step("pharmacy reports a delay: nobody clicks AI, a draft appears for the doctor", async () => {
     await press("Report a delay");
+    // The dock on the pharmacy page shows the agents waking up, live, without opening any other page.
+    const dock = pharm.getByRole("region", { name: "Live agent log" });
+    await expect(dock.getByText("Agents working")).toBeVisible({ timeout: 20_000 });
+    await dock.getByRole("button").click();
+    await expect(dock.getByText("Woke up: pharmacy delayed").first()).toBeVisible({ timeout: 20_000 });
+    await shot(pharm, "14-pharmacy-live-agent-dock");
     const card = doctor.locator("li").filter({ hasText: RX }).filter({ hasText: "Draft by agent" }).first();
     await expect(card).toBeVisible({ timeout: 90_000 });
     await expect(card.getByText("not sent")).toBeVisible();

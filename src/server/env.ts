@@ -42,7 +42,7 @@ export function getEnv(): Env {
     demoMode: raw.DEMO_MODE ? raw.DEMO_MODE === "true" : !production,
     secret: raw.APPLICATION_SECRET ?? ephemeralSecret,
     secureCookies: raw.APP_BASE_URL?.startsWith("https://") ?? production,
-    geminiConfigured: Boolean(raw.GEMINI_API_KEY),
+    geminiConfigured: Boolean(raw.GEMINI_API_KEY || (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY && process.env.BEDROCK_MODEL)),
     databaseConfigured: Boolean(raw.DATABASE_URL),
   };
 }

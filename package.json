@@ -12,6 +12,7 @@
     "db:migrate": "node --env-file=.env.local --import tsx scripts/migrate.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.1164.0",
     "@google/genai": "^3.0.0",
     "@tanstack/react-query": "^5.107.1",
     "lucide-react": "^1.70.0",

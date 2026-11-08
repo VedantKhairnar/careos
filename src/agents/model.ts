@@ -1,4 +1,5 @@
 import { ApiError, GoogleGenAI, type Content } from "@google/genai";
+import { BedrockModel, FallbackModel } from "./bedrock";
 
 /**
  * The only place that talks to Gemini. Server-side only: the key is read from the environment here
@@ -104,7 +105,8 @@ export class GeminiModel implements LanguageModel {
   private limiter = new RateLimiter(MAX_REQUESTS_PER_MINUTE);
   private cooldownUntil = new Map<string, number>();
 
-  constructor(private apiKey: string, private models: string[] = modelChain()) {
+  /** How long a request may queue for a free slot (ms). Short when a fallback model is available. */
+  constructor(private apiKey: string, private models: string[] = modelChain(), private waits: { foreground?: number; background?: number } = { background: 75_000 }) {
     this.client = new GoogleGenAI({ apiKey });
   }
 
@@ -120,7 +122,7 @@ export class GeminiModel implements LanguageModel {
         continue;
       }
       for (let attempt = 0; attempt < 2; attempt++) {
-        await this.limiter.acquire(req.background ? 75_000 : undefined);
+        await this.limiter.acquire(req.background ? this.waits.background : this.waits.foreground);
         const t0 = Date.now();
         try {
           const res = await Promise.race([
@@ -192,10 +194,21 @@ export function setModelForTests(m: LanguageModel | null): void {
   override = m;
 }
 
+export function bedrockConfigured(): boolean {
+  return Boolean(process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY && process.env.BEDROCK_MODEL);
+}
+
 export function getModel(): LanguageModel {
   if (override) return override;
   const key = process.env.GEMINI_API_KEY;
-  if (!key) return new NoKeyModel();
-  if (!cached || cached.key !== key) cached = { key, model: new GeminiModel(key) };
+  const bedrock = bedrockConfigured() ? `${process.env.BEDROCK_MODEL}@${process.env.AWS_REGION ?? "us-east-1"}` : "";
+  if (!key && !bedrock) return new NoKeyModel();
+  if (!cached || cached.key !== `${key}|${bedrock}`) {
+    const fb = bedrock ? new BedrockModel(process.env.BEDROCK_MODEL!, process.env.AWS_REGION ?? "us-east-1") : null;
+    // With a fallback available, do not make people (or agents) wait long for a Gemini slot: fail over instead.
+    const gemini = key ? new GeminiModel(key, modelChain(), fb ? { foreground: 4_000, background: 8_000 } : { background: 75_000 }) : null;
+    const model: LanguageModel = gemini && fb ? new FallbackModel(gemini, fb, (why) => console.warn(`[ai] Gemini ${why}; using Bedrock`)) : (gemini ?? fb!);
+    cached = { key: `${key}|${bedrock}`, model };
+  }
   return cached.model;
 }
