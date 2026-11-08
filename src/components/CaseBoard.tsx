@@ -21,12 +21,12 @@ import { VisitStatus } from "./VisitStatus";
 
 const iso = (daysFromNow: number) => new Date(Date.now() + daysFromNow * 86_400_000).toISOString().slice(0, 10);
 
-/** Good demo content, already in the boxes, so nobody has to type or paste during a demo. Fictional, with explicit doses and times. */
+/** Realistic content already in the boxes, so nobody has to type or paste. Every dose, time, end date and follow-up date is spelled out, so no field comes out empty. */
 const demoNotes = (name: string) =>
-  `Fictional demo visit for ${name}. Recovering well after the procedure, no signs of infection. Rest, keep the area elevated and keep the dressing dry. ` +
-  `Demo-Antibiotic: 1 capsule at 9am and 9pm, starting ${iso(0)} until ${iso(4)}. ` +
-  `Demo-Analgesic: 1 tablet at 8am, 2pm and 8pm, starting ${iso(0)}. ` +
-  `Review visit on ${iso(14)}. Call the clinic if the area becomes very red, hot or swollen, or if there is a fever.`;
+  `Visit notes for ${name}. Recovering well after the procedure, no signs of infection. Rest, keep the area elevated and the dressing dry. ` +
+  `Antibiotic: 1 capsule at 9am and 9pm, starting ${iso(0)} until ${iso(4)}. ` +
+  `Pain relief: 1 tablet at 8am, 2pm and 8pm, starting ${iso(0)} until ${iso(6)}. ` +
+  `Review visit on ${iso(14)}. Contact the clinic if the area becomes very red, hot or swollen, or if there is a fever.`;
 
 interface Summary {
   patient: { id: string; displayName: string };
@@ -60,6 +60,11 @@ export function CaseBoard() {
   };
   const pendingPlan = s.plans.find((p) => p.state === "PENDING_REVIEW");
   const hasApproved = s.plans.some((p) => p.state === "APPROVED");
+  const approvedPlan = s.plans.filter((p) => p.state === "APPROVED").sort((a, b) => (b.approvedAt ?? "").localeCompare(a.approvedAt ?? ""))[0];
+  const med = approvedPlan?.content.medications[0];
+  const rxName = med?.name ?? "Antibiotic";
+  // The prescription is filled in from the approved plan, so it always matches what the doctor just approved.
+  const rxInstructions = med ? `Take ${[med.dose, med.times?.length ? `at ${med.times.join(", ")}` : "", med.endDate ? `until ${med.endDate}` : ""].filter(Boolean).join(" ")}.` : "Take as directed in the care plan.";
   const rx = [...s.prescriptions].sort((a, b) => b.lastUpdated.localeCompare(a.lastUpdated))[0];
   const proposals = (sugg.data ?? []).filter((x) => x.patientId === pid && x.status === "pending");
   const openQuestions = (qs.data ?? []).filter((q) => q.status === "open");
@@ -94,7 +99,7 @@ export function CaseBoard() {
   if (items.length === 0 && !hasApproved)
     items.push({ key: "record", title: "Record this visit", why: "Paste your visit notes. The assistant drafts a plan for you to review. It cannot approve it.", node: <AiDraftPanel key={pid} patientId={pid} onCreated={reload} startOpen initialNotes={prefill.notes(patientName(pid))} /> });
   if (items.length === 0 && !rxActive)
-    items.push({ key: "send", title: "Send a prescription", why: "The plan is approved. If the patient needs a medicine, authorize it here (simulated pharmacy).", node: <PrescriptionForm key={pid} patientId={pid} onCreated={reload} startOpen initialMedication="Demo-Antibiotic (fictional)" initialInstructions="Take 1 capsule at 9am and 9pm with food until finished. Fictional demo instructions." /> });
+    items.push({ key: "send", title: "Send a prescription", why: "The plan is approved. If the patient needs a medicine, authorize it here (simulated pharmacy).", node: <PrescriptionForm key={`${pid}-${rxName}`} patientId={pid} onCreated={reload} startOpen initialMedication={rxName} initialInstructions={rxInstructions} /> });
 
   const primary = items[0];
   const rest = items.slice(1);

@@ -5,7 +5,7 @@ import { problems, shot, watch, writeReport } from "./helpers";
  * The whole demo from ONE tab: the Demo stage shows doctor, patient and pharmacy as live windows next to the agents' log.
  * Uses real Gemini. Presses Start afresh, so it clears the demo data of whatever server it runs against.
  */
-const RX = "Demo-Antibiotic";
+const RX = "Antibiotic";
 test.use({ viewport: { width: 1920, height: 1080 } });
 
 test("the whole care cycle from one screen, with the agents' log beside it", async ({ page }) => {
@@ -31,7 +31,7 @@ test("the whole care cycle from one screen, with the agents' log beside it", asy
 
   await test.step("doctor: AI draft from visit notes, then a human approves", async () => {
     await expect(doctor.getByText("Record this visit")).toBeVisible({ timeout: 30_000 }); // the board tells the doctor what to do
-    await expect(doctor.getByLabel("Visit notes")).toHaveValue(/Fictional demo visit for Alex Rivera.*Demo-Antibiotic.*9am and 9pm/); // pre-filled: nothing to type
+    await expect(doctor.getByLabel("Visit notes")).toHaveValue(/Visit notes for Alex Rivera.*Antibiotic.*9am and 9pm.*Pain relief/); // pre-filled: nothing to type
     await doctor.getByRole("button", { name: "Create draft for review" }).click();
     await expect(log.getByText("Clinician asked for a care-plan draft from visit notes").first()).toBeVisible({ timeout: 60_000 });
     await expect(doctor.getByText("Review and approve the care plan")).toBeVisible({ timeout: 60_000 });
@@ -43,7 +43,7 @@ test("the whole care cycle from one screen, with the agents' log beside it", asy
 
   await test.step("patient reports a dose", async () => {
     await patient.getByRole("link", { name: "Medications" }).first().click();
-    const dose = patient.locator("li").filter({ hasText: /Demo-Antibiotic|Demo-Analgesic/i }).getByRole("button", { name: "Taken" }).first();
+    const dose = patient.locator("li").filter({ hasText: /Antibiotic|Pain relief/i }).getByRole("button", { name: "Taken" }).first();
     await expect(dose).toBeVisible({ timeout: 30_000 });
     await dose.click();
     await expect(patient.getByText("You reported: taken").first()).toBeVisible();
@@ -51,7 +51,7 @@ test("the whole care cycle from one screen, with the agents' log beside it", asy
 
   await test.step("doctor authorizes a prescription; pharmacy receives and acknowledges", async () => {
     await expect(doctor.getByText("Send a prescription")).toBeVisible({ timeout: 30_000 });
-    await expect(doctor.getByLabel("Medication (fictional)")).toHaveValue("Demo-Antibiotic (fictional)"); // pre-filled
+    await expect(doctor.getByLabel("Medication (fictional)")).toHaveValue("Antibiotic"); // pre-filled
     await doctor.getByRole("button", { name: "Authorize prescription" }).click();
     await expect(doctor.getByText("Authorized and sent (simulated transmission).")).toBeVisible();
     const rx = pharm.locator("li").filter({ hasText: RX }).first();
