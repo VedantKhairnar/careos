@@ -58,7 +58,7 @@ for (const [label, viewport, mobile] of [["tablet", TABLET, false], ["phone", PH
         ["/doctor/prescriptions", "Prescriptions"],
         ["/doctor/gaps", "Care gaps"],
         ["/doctor/analytics", "Analytics"],
-        ["/doctor/agents", "Agent activity"],
+        ["/doctor/agents", "Agent room"],
       ] as const) {
         await page.goto(url);
         await expect(page.getByRole("heading", { name: heading, exact: true }).first()).toBeVisible({ timeout: 30_000 });

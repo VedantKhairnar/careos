@@ -7,7 +7,8 @@ import { api, ApiError } from "@/lib/api";
 import { patientName } from "@/lib/demoPatients";
 import { timeAgo } from "@/lib/format";
 import { useApi } from "@/lib/useApi";
-import { AgentTrace } from "./AgentTrace";
+import Link from "next/link";
+import { LogView } from "./LogView";
 import { Badge, Button, Card, useToast } from "./ui";
 
 const TRIGGER: Record<string, string> = {
@@ -43,10 +44,10 @@ export function AgentSuggestionsCard() {
   }
 
   return (
-    <Card title={`Fulfilment agent drafts${items.length ? ` (${items.length} waiting for you)` : ""}`}>
+    <Card title={`Care coordinator proposals${items.length ? ` (${items.length} waiting for you)` : ""}`}>
       <p className="mb-3 flex items-start gap-2 text-sm text-muted">
         <Bot aria-hidden className="mt-0.5 h-4 w-4 shrink-0" />
-        The agent woke up on its own when a pharmacy update arrived, read the record with read-only tools and prepared these drafts. It cannot send anything. You decide.
+        A coordinator agent woke up on its own when a pharmacy update arrived, investigated, handed the wording to a writer agent, and had it checked by an independent safety reviewer. It cannot send anything. You decide.
       </p>
       <ul className="space-y-3">
         {items.map((s) => (
@@ -55,12 +56,13 @@ export function AgentSuggestionsCard() {
               <p className="font-medium">
                 {patientName(s.patientId)} · {s.medication}
               </p>
-              <Badge tone="info">Draft by agent · not sent</Badge>
+              <div className="flex flex-wrap gap-2">{s.urgency === "time_sensitive" && <Badge tone="warning">Time-sensitive</Badge>}<Badge tone="info">Draft by agent · not sent</Badge></div>
             </div>
             <p className="text-xs text-muted">
               Triggered because {TRIGGER[s.trigger] ?? s.trigger} · {timeAgo(s.createdAt)}
             </p>
-            <p className="mt-2 text-sm">{s.clinicianSummary}</p>
+            <p className="mt-2 text-sm"><span className="font-medium">{s.urgency === "time_sensitive" ? "Why it is time-sensitive:" : "Why routine:"}</span> {s.urgencyReason}</p>
+            <p className="mt-1 text-sm">{s.clinicianSummary}</p>
             <p className="mt-1 text-sm">
               <span className="font-medium">Suggested next step:</span> {s.suggestedNextStep}
             </p>
@@ -77,7 +79,17 @@ export function AgentSuggestionsCard() {
                 Dismiss
               </Button>
             </div>
-            <AgentTrace steps={s.trace} label="What the agent did" />
+            <details className="mt-2 rounded-lg border border-line text-xs">
+              <summary className="cursor-pointer select-none px-2 py-1.5 font-medium text-muted">
+                Agent log · {s.log.length} steps · safety review rounds: {s.safetyReviewRounds}
+              </summary>
+              <div className="p-2">
+                <LogView entries={s.log} />
+                <Link href="/doctor/agents" className="mt-2 inline-block font-sans text-accent underline">
+                  Open the live agent room
+                </Link>
+              </div>
+            </details>
           </li>
         ))}
         {recent.map((s) => (

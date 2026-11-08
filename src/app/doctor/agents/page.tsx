@@ -1,6 +1,11 @@
 "use client";
 
-import { Badge, Card, CardSkeleton, EmptyState, ErrorState } from "@/components/ui";
+import { useState } from "react";
+import { LogView } from "@/components/LogView";
+import { Badge, Button, Card, CardSkeleton, EmptyState, ErrorState, useToast } from "@/components/ui";
+import type { RunRecord } from "@/agents/runLog";
+import { api, ApiError } from "@/lib/api";
+import { patientName } from "@/lib/demoPatients";
 import type { AgentExecution } from "@/server/store";
 import { timeAgo } from "@/lib/format";
 import { useApi } from "@/lib/useApi";
@@ -11,6 +16,71 @@ interface Activity {
   byAgent: { name: string; count: number; failed: number }[];
   byTool: { name: string; count: number; failed: number }[];
   recent: AgentExecution[];
+}
+
+const STATUS: Record<RunRecord["status"], { label: string; tone: "info" | "warning" | "success" | "danger" }> = {
+  running: { label: "Working now", tone: "info" },
+  awaiting_human: { label: "Waiting for a clinician", tone: "warning" },
+  done: { label: "Finished", tone: "success" },
+  failed: { label: "Stopped (failed)", tone: "danger" },
+};
+
+/** The live room: every agent run, as it happens. Polls once a second while anything is running. */
+function LiveRuns() {
+  const toast = useToast();
+  const [anyRunning, setAnyRunning] = useState(false);
+  const runs = useApi<RunRecord[]>("/api/agent-runs", { pollMs: anyRunning ? 1000 : 3000 });
+  const [busy, setBusy] = useState(false);
+  const running = (runs.data ?? []).some((r) => r.status === "running");
+  if (running !== anyRunning) setAnyRunning(running);
+
+  async function sweep() {
+    setBusy(true);
+    try {
+      const r = await api<{ started: number }>("/api/agent-runs/sweep", { body: {} });
+      toast(r.started ? `Coordinator started on ${r.started} problem${r.started > 1 ? "s" : ""}.` : "Nothing new for the coordinator to look at.");
+      await runs.reload();
+    } catch (e) {
+      toast(e instanceof ApiError ? e.message : "That did not work.", "danger");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Card title="Live agent room">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+        <p className="max-w-prose text-sm text-muted">
+          Three agents work together: a <b>Coordinator</b> that investigates and decides, a <b>Writer</b> it hands wording to, and an independent <b>Safety Reviewer</b>. Code blocks the coordinator from proposing anything unreviewed. Press Report a delay in the pharmacy tab and watch.
+        </p>
+        <Button variant="secondary" loading={busy} onClick={sweep}>
+          Look for problems now
+        </Button>
+      </div>
+      {runs.loading && <CardSkeleton rows={3} />}
+      {runs.data && runs.data.length === 0 && <EmptyState title="No agent has run yet" hint="Agents wake when the pharmacy reports a delay, a question or a rejection." />}
+      <ul className="space-y-3">
+        {(runs.data ?? []).map((r, i) => (
+          <li key={r.runId}>
+            <details open={i === 0} className="rounded-xl border border-line">
+              <summary className="flex cursor-pointer flex-wrap items-center justify-between gap-2 p-3">
+                <span className="font-medium">
+                  {patientName(r.patientId)} · {r.trigger.replace("prescription.", "pharmacy ")}
+                </span>
+                <span className="flex items-center gap-2 text-xs text-muted">
+                  {r.entries.length} steps
+                  <Badge tone={STATUS[r.status].tone}>{STATUS[r.status].label}</Badge>
+                </span>
+              </summary>
+              <div className="border-t border-line p-3">
+                <LogView entries={r.entries} />
+              </div>
+            </details>
+          </li>
+        ))}
+      </ul>
+    </Card>
+  );
 }
 
 function Stat({ label, value }: { label: string; value: number }) {
@@ -26,10 +96,12 @@ export default function AgentActivity() {
   const { data, loading, error, reload } = useApi<Activity>("/api/agents/activity", { pollMs: 4000 });
   return (
     <>
-      <h1 className="text-2xl font-bold">Agent activity</h1>
+      <h1 className="text-2xl font-bold">Agent room</h1>
       <p className="text-sm text-muted">
-        A record of every model call and tool call the three assistants have made. This is real activity from this running server, not sample data. It resets when the server restarts.
+        Everything below is real activity from this running server, not sample data: the live log of agent runs first, then totals for every model call and tool call. The live log resets when the server restarts; each finished run is also saved with its draft.
       </p>
+
+      <LiveRuns />
 
       {loading && <CardSkeleton rows={4} />}
       {error && <ErrorState message={error.message} onRetry={reload} />}

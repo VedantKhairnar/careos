@@ -32,6 +32,8 @@ export interface ModelRequest {
   /** Ask for JSON that matches this schema instead of free text. */
   responseJsonSchema?: unknown;
   maxOutputTokens?: number;
+  /** Background agent work may queue for a free slot much longer than someone waiting at a screen. */
+  background?: boolean;
 }
 
 export interface ModelResult {
@@ -73,7 +75,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 export class RateLimiter {
   private stamps: number[] = [];
   constructor(private max: number, private windowMs = 60_000, private maxWaitMs = MAX_QUEUE_WAIT_MS, private now = () => Date.now()) {}
-  async acquire(): Promise<void> {
+  async acquire(maxWaitMs = this.maxWaitMs): Promise<void> {
     for (;;) {
       const t = this.now();
       this.stamps = this.stamps.filter((s) => t - s < this.windowMs);
@@ -82,7 +84,7 @@ export class RateLimiter {
         return;
       }
       const wait = this.stamps[0] + this.windowMs - t;
-      if (wait > this.maxWaitMs) throw new AiUnavailable("rate_limited", "The assistant is busy right now. Please try again in a minute.");
+      if (wait > maxWaitMs) throw new AiUnavailable("rate_limited", "The assistant is busy right now. Please try again in a minute.");
       await sleep(wait + 5);
     }
   }
@@ -118,7 +120,7 @@ export class GeminiModel implements LanguageModel {
         continue;
       }
       for (let attempt = 0; attempt < 2; attempt++) {
-        await this.limiter.acquire();
+        await this.limiter.acquire(req.background ? 75_000 : undefined);
         const t0 = Date.now();
         try {
           const res = await Promise.race([

@@ -12,6 +12,10 @@ export interface AgentSpec {
   /** The ONLY tools this agent can call. Anything else is refused and logged. */
   tools: ToolDef[];
   maxModelCalls?: number;
+  /** Not waiting at a screen: may queue for a model slot. */
+  background?: boolean;
+  /** Called for every model call and tool call, so a run can be shown live. */
+  onStep?: (s: { kind: "model" | "tool" | "blocked"; name: string; ms: number; ok: boolean; text?: string; detail?: string; args?: unknown }) => void;
 }
 
 /** One visible step of an agent run: what it did, how long it took, whether it worked. */
@@ -53,12 +57,13 @@ export async function runAgent(spec: AgentSpec, actor: Actor, patientId: string,
     const startedAt = new Date().toISOString();
     let res;
     try {
-      res = await model.generate({ system: spec.system, contents, tools: lastChance || decls.length === 0 ? undefined : decls });
+      res = await model.generate({ system: spec.system, contents, tools: lastChance || decls.length === 0 ? undefined : decls, background: spec.background });
     } catch (err) {
       await store.logAgentExecution({ agent: spec.name, patientId, startedAt, durationMs: 0, ok: false, error: safeError(err), model: usedModel || undefined });
       throw err;
     }
     usedModel = res.model;
+    spec.onStep?.({ kind: "model", name: res.model, ms: res.latencyMs, ok: true, text: res.text || undefined, detail: `${res.usage.input} tokens in, ${res.usage.output} out` });
     trace.push({ kind: "model", name: res.model, ok: true, ms: res.latencyMs, detail: `${res.usage.input} tokens in, ${res.usage.output} out` });
     await store.logAgentExecution({ agent: spec.name, patientId, startedAt, durationMs: res.latencyMs, ok: true, model: res.model, inputTokens: res.usage.input, outputTokens: res.usage.output });
 
@@ -85,7 +90,7 @@ export async function runAgent(spec: AgentSpec, actor: Actor, patientId: string,
         const parsed = tool.args.safeParse(fc.args);
         if (!parsed.success) {
           ok = false;
-          error = "invalid arguments";
+          error = `invalid arguments: ${parsed.error.issues[0]?.path.join(".")} ${parsed.error.issues[0]?.message ?? "bad input"}`;
           response = { error: `invalid arguments: ${parsed.error.issues[0]?.message ?? "bad input"}` };
         } else {
           try {
@@ -97,6 +102,7 @@ export async function runAgent(spec: AgentSpec, actor: Actor, patientId: string,
           }
         }
       }
+      spec.onStep?.({ kind: ok ? "tool" : "blocked", name: fc.name, ms: Date.now() - t0, ok, args: fc.args, detail: ok ? JSON.stringify((response as { result?: unknown }).result ?? null) : error });
       toolsUsed.push({ name: fc.name, ok });
       trace.push({ kind: "tool", name: fc.name, ok, ms: Date.now() - t0, detail: error });
       await store.logAgentExecution({ agent: spec.name, patientId, startedAt: startedTool, durationMs: Date.now() - t0, ok, error, tool: fc.name, model: res.model });

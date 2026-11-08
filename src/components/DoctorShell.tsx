@@ -13,7 +13,7 @@ const NAV = [
   { href: "/doctor/prescriptions", label: "Prescriptions", icon: ClipboardList },
   { href: "/doctor/gaps", label: "Care gaps", icon: AlertTriangle },
   { href: "/doctor/analytics", label: "Analytics", icon: BarChart3 },
-  { href: "/doctor/agents", label: "Agent activity", icon: Activity },
+  { href: "/doctor/agents", label: "Agent room", icon: Activity },
 ];
 
 export function DoctorShell({ children }: { children: ReactNode }) {

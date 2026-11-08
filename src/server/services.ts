@@ -2,7 +2,8 @@ import { createHash, randomUUID } from "node:crypto";
 import { detectGaps, type CareGap } from "@/domain/careGap";
 import type { Actor, CareEvent, EventType } from "@/domain/events";
 import { prescriptionStatus } from "@/domain/status";
-import { AGENT_TRIGGERS, runFulfilmentAgent } from "@/agents/fulfilmentAgent";
+import { AGENT_TRIGGERS, runCoordinator } from "@/agents/coordinator";
+import { clearRuns } from "@/agents/runLog";
 import { HttpError, rejection } from "./http";
 import { nowMs, runtime } from "./runtime";
 
@@ -173,8 +174,8 @@ export async function applyPharmacyEvent(
   }
   if (r.status === "applied" && AGENT_TRIGGERS.has(input.type)) {
     // Event-driven agent: wakes on its own, in the background. A failure is logged and never blocks the pharmacy event.
-    void runFulfilmentAgent({ workflowId: input.workflowId, patientId: existing[0].patientId, triggerEventId: r.event.eventId, triggerType: input.type }).catch((err) =>
-      console.warn("[fulfilment-agent]", err instanceof Error ? err.message : err),
+    void runCoordinator({ workflowId: input.workflowId, patientId: existing[0].patientId, triggerEventId: r.event.eventId, triggerType: input.type }).catch((err) =>
+      console.warn("[coordinator]", err instanceof Error ? err.message : err),
     );
   }
   return { result: r.status, ...(await prescriptionViewAsSystem(input.workflowId)) };
@@ -212,6 +213,7 @@ export async function resetDemo() {
   if (!store.resetDemoData) throw new HttpError(501, "not_supported", "This storage cannot be reset");
   const counts = await store.resetDemoData();
   runtime().clock.offsetMs = 0; // time is real again
+  clearRuns();
   return counts;
 }
 

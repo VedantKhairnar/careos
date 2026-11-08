@@ -39,7 +39,7 @@ test("event-driven agent drafts, clinician approves, patient is told; assistant 
     await press("Receive prescription");
     await press("Acknowledge");
     await doctor.goto("/doctor");
-    await expect(doctor.getByText(/Fulfilment agent drafts/)).toHaveCount(0);
+    await expect(doctor.locator("li").filter({ hasText: RX }).filter({ hasText: "Draft by agent" })).toHaveCount(0);
   });
 
   await test.step("pharmacy reports a delay: nobody clicks AI, a draft appears for the doctor", async () => {
@@ -47,8 +47,10 @@ test("event-driven agent drafts, clinician approves, patient is told; assistant 
     const card = doctor.locator("li").filter({ hasText: RX }).filter({ hasText: "Draft by agent" }).first();
     await expect(card).toBeVisible({ timeout: 90_000 });
     await expect(card.getByText("not sent")).toBeVisible();
-    await card.getByText(/What the agent did/).click();
-    await expect(card.getByText("get_prescription_history")).toBeVisible(); // a real tool call
+    await card.getByText(/Agent log/).click();
+    await expect(card.getByText("get_prescription_history", { exact: true }).first()).toBeVisible(); // a real tool call
+    await expect(card.getByText("Handoff → Writer").first()).toBeVisible();
+    await expect(card.getByText(/Approved by the Safety Reviewer/).first()).toBeVisible();
     await shot(doctor, "10-doctor-agent-draft");
     await checkA11y(doctor, "doctor overview with agent draft");
 
@@ -57,9 +59,15 @@ test("event-driven agent drafts, clinician approves, patient is told; assistant 
     await expect(alex.getByText(/Message from your care team/)).toHaveCount(0);
 
     // The doctor edits the wording and approves.
+    // The live agent room shows the same run, step by step.
+    await doctor.goto("/doctor/agents");
+    await expect(doctor.getByText("Woke up: pharmacy delayed").first()).toBeVisible();
+    await expect(doctor.getByText("Handoff → Safety Reviewer").first()).toBeVisible();
+    await shot(doctor, "13-doctor-agent-room");
+    await doctor.goto("/doctor");
     await card.getByLabel(/Message to the patient/).fill("Your pharmacy is running late with this. We are calling them today.");
     await card.getByRole("button", { name: "Approve and send to patient" }).click();
-    await expect(doctor.getByText("Sent to the patient.")).toBeVisible();
+    await expect(doctor.getByText("Sent to the patient.", { exact: true })).toBeVisible();
   });
 
   await test.step("the patient sees the clinician-approved message", async () => {

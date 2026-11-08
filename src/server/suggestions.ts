@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { Actor, CareEvent } from "@/domain/events";
-import type { TraceStep } from "@/agents/runner";
+import { endRun, listRuns, logStep, type LogEntry } from "@/agents/runLog";
 import { HttpError } from "./http";
 import { runtime } from "./runtime";
 import { envelope, submit, SYSTEM } from "./services";
@@ -15,11 +15,20 @@ export interface SuggestionView {
   clinicianSummary: string;
   suggestedNextStep: string;
   missingInformation: string[];
-  model: string;
-  trace: TraceStep[];
+  runId: string;
+  urgency: "routine" | "time_sensitive";
+  urgencyReason: string;
+  safetyReviewRounds: number;
+  log: LogEntry[];
   createdAt: string;
   status: "pending" | "sent" | "dismissed";
   reviewedAt: string | null;
+}
+
+/** While the server that ran the agents is still up, its live log is the freshest (it includes the clinician's decision). */
+function liveLog(_suggestionId: string, p: Record<string, unknown>): LogEntry[] | null {
+  const rec = listRuns().find((r) => r.runId === p.runId);
+  return rec ? rec.entries : null;
 }
 
 function build(all: CareEvent[]): SuggestionView[] {
@@ -41,8 +50,11 @@ function build(all: CareEvent[]): SuggestionView[] {
         clinicianSummary: String(p.clinicianSummary ?? ""),
         suggestedNextStep: String(p.suggestedNextStep ?? ""),
         missingInformation: Array.isArray(p.missingInformation) ? (p.missingInformation as unknown[]).map(String) : [],
-        model: String(p.model ?? ""),
-        trace: Array.isArray(p.trace) ? (p.trace as TraceStep[]) : [],
+        runId: String(p.runId ?? ""),
+        urgency: p.urgency === "time_sensitive" ? ("time_sensitive" as const) : ("routine" as const),
+        urgencyReason: String(p.urgencyReason ?? ""),
+        safetyReviewRounds: Number(p.safetyReviewRounds ?? 1),
+        log: liveLog(id, p) ?? (Array.isArray(p.log) ? (p.log as LogEntry[]) : []),
         createdAt: e.recordedAt,
         status: rev ? (rev.payload.decision === "approve" ? ("sent" as const) : ("dismissed" as const)) : ("pending" as const),
         reviewedAt: rev?.recordedAt ?? null,
@@ -76,6 +88,8 @@ export async function reviewSuggestion(actor: Actor, id: string, decision: "appr
   const base = { workflowId: s.workflowId, patientId: s.patientId, correlationId: `corr_${s.workflowId}` };
   const r = await submit(actor, envelope(actor, { ...base, type: "agent.suggestion_reviewed", idempotencyKey: `agent-review:${id}` }, { payload: { suggestionId: id, decision, edited: decision === "approve" && message !== s.patientMessage }, simulated: true }));
   if (r.status !== "applied") return { alreadyReviewed: true, status: s.status };
+  logStep(s.runId, { agent: "clinician", kind: "human", title: decision === "approve" ? "Clinician approved and sent to the patient" : "Clinician dismissed the draft", detail: decision === "approve" && message !== s.patientMessage ? "The clinician edited the wording first." : undefined, ok: true });
+  endRun(s.runId, "done");
   if (decision === "approve") {
     const nid = randomUUID();
     await submit(SYSTEM, { ...envelope(SYSTEM, { ...base, type: "notification.sent", idempotencyKey: `notif:agent:${id}` }, { payload: { important: true, notificationId: nid, kind: "care_team_message", message, suggestionId: id }, simulated: true }), eventId: nid });
