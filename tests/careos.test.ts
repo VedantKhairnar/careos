@@ -284,7 +284,7 @@ describe("scenario A: post-surgery prescription with a pharmacy delay", () => {
     // Pharmacy reports a delay; no follow-up happens.
     await send(pharmacy, "prescription.delayed");
     advance(90);
-    let gaps = detectGaps(await store.listByWorkflow("rx1"), iso());
+    const gaps = detectGaps(await store.listByWorkflow("rx1"), iso());
     expect(gaps.map((g) => g.rule)).toEqual(["delay_unaddressed"]);
     // Clinician follows up; pharmacy resumes and asks a question; clinician answers.
     await send(clinician, "followup.completed");

@@ -1,3 +1,4 @@
+import { connection } from "next/server";
 import { ZodError, type ZodType } from "zod";
 import { Forbidden, type RejectCode } from "./orchestrator";
 import { getSession, type Session } from "./session";
@@ -47,12 +48,34 @@ export function rejection(code: RejectCode, reason: string): HttpError {
 
 type Handler<C> = (req: Request, ctx: C) => Promise<Response>;
 
-/** Wraps a handler so every failure becomes the standard error shape. */
+/** Next.js signals redirects, not-found and prerender bail-outs with errors that carry a `digest`. */
+function isNextControlFlow(err: unknown): boolean {
+  const digest = (err as { digest?: unknown } | null)?.digest;
+  return typeof digest === "string" && (digest.startsWith("NEXT_") || digest === "DYNAMIC_SERVER_USAGE");
+}
+
+/** `connection()` only exists inside a Next.js request scope; unit tests call handlers directly. */
+async function waitForRequest(): Promise<void> {
+  try {
+    await connection();
+  } catch (err) {
+    // Only this exact case is safe to ignore (unit tests). Prerender signals must propagate.
+    if (err instanceof Error && err.message.includes("outside a request scope")) return;
+    throw err;
+  }
+}
+
+/**
+ * Wraps a handler so every failure becomes the standard error shape.
+ * Handlers always run at request time, never during build-time prerendering.
+ */
 export function route<C = unknown>(fn: Handler<C>): Handler<C> {
   return async (req, ctx) => {
+    await waitForRequest();
     try {
       return await fn(req, ctx);
     } catch (err) {
+      if (isNextControlFlow(err)) throw err;
       if (err instanceof HttpError) return fail(err.status, err.code, err.message);
       if (err instanceof Forbidden) return fail(403, "forbidden", err.message);
       if (err instanceof ZodError) {
